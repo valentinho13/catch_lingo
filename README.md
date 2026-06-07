@@ -1,79 +1,160 @@
 # CatchLingo
 
-CatchLingo is a Flutter language learning app that turns real-world objects into vocabulary using camera-based recognition, flashcards and quiz-based training.
+CatchLingo is a Flutter MVP for real-world vocabulary discovery.
 
-The long-term idea is simple:
+The core idea:
 
-> See something. Catch the word. Learn it.
+> Point your camera at the world. Catch the words you see. Remember them later.
 
-## Vision
+CatchLingo helps users learn words from real places, objects, travel moments, everyday environments, and personal experiences.
 
-CatchLingo should help users build vocabulary from their real environment.
+It is not primarily a dictionary, translator, school app, or flashcard app.
 
-Instead of manually searching for words, the app will eventually use the camera to detect objects in the live view and suggest vocabulary based on what the user sees.
+It is a real-world word discovery experience.
 
-Example:
+## Product Direction
 
-- The camera detects a bottle.
-- CatchLingo suggests the word.
-- The user saves it to their vocabulary.
-- The word becomes part of flashcards and quiz training.
+CatchLingo should feel closer to:
 
-## Current Features
+- a camera-powered discovery tool
+- a travel companion
+- a personal word memory
+- a lightweight learning experience
+- a visual language companion
 
-The current version is an early Flutter prototype.
+It should not feel like:
+
+- homework
+- a dense vocabulary dashboard
+- a generic dictionary
+- a technical object-detection demo
+- a childish collection game
+
+The long-term idea is:
+
+> The world becomes the vocabulary source.
+
+Users do not manually build word lists.
+
+Users discover vocabulary by looking at the world.
+
+## Core Loop
+
+The product is designed around this loop:
+
+1. Explore
+2. Detect
+3. Catch
+4. Save
+5. Review
+6. Explore again
+
+Short version:
+
+> Discover → Catch → Remember
+
+Every feature should strengthen this loop.
+
+## Current MVP
+
+The app currently focuses on proving that catching a word can feel satisfying before adding real camera and object-detection features.
 
 Implemented so far:
 
-- Start screen with CatchLingo themed background
-- Shared vocabulary state
-- Word list
-- Add new words
-- Delete words with confirmation
-- Quiz-style training
-- Randomized answer order
-- Score tracking
-- Training result screen
+- Flutter / Material 3 app structure
+- Android-first MVP direction
+- Clean Home screen
+- Explore Mode
+- Dictionary screen
+- Mock detected words
+- Tap-to-catch interaction
+- Collected word state
+- Translation reveal after collection
+- Session counter
+- Collection feedback
+- Duplicate collection prevention
+- Central design system foundation
+- Central theme file
+- Reusable catch word chip
+- Reusable collection counter
+- Widget tests for core MVP behavior
 
-## Planned Features
+Example mock word:
 
-Planned next steps:
+```text
+chair -> kursi
+```
 
-- Flashcard mode
-- Persistent local storage
-- Camera live view
-- Object recognition
-- Automatic vocabulary suggestions
-- Learning queue for detected words
-- Progress tracking
-- Better app icon and branding
-- Improved UI animations
+## Current Screens
+
+- Home
+- Explore Mode
+- My Dictionary
+
+Older manual vocabulary prototype files may still exist in `lib/legacy/` as reference material. They are not the current product direction.
+
+## Not Built Yet
+
+These are intentionally not part of the current MVP step:
+
+- real camera integration
+- ML Kit
+- real object detection
+- cloud sync
+- user accounts
+- full local database architecture
+- full spaced repetition
+- complex settings
+- AI explanations
+- multi-language marketplace
+
+The camera is important, but it is still a tool.
+
+The product is the discovery experience.
+
+## Planned Milestones
+
+Near-term:
+
+- Make the catch moment feel satisfying
+- Make Explore Mode feel like a real camera-session preview
+- Improve Home screen identity
+- Improve Dictionary as a personal word memory
+- Add a simple session summary flow
+- Connect caught words more clearly to the Dictionary
+
+Later:
+
+- Camera preview and permissions
+- Real object detection
+- Real vocabulary collection
+- Local storage for sessions and collected words
+- Review and flashcard flows
+- Travel/session memory
 
 ## Tech Stack
 
 - Flutter
 - Dart
-- Android support
-- Git / GitHub
+- Material 3
+- Android-first MVP
 
-## Project Status
+## Development Principles
 
-This project is currently in early development.
+- Keep milestones small.
+- Prefer simple, readable Flutter code.
+- Avoid unnecessary packages.
+- Do not implement future features before the core discovery loop feels good.
+- When choosing between learning complexity and discovery experience, prefer discovery experience unless learning quality would clearly suffer.
+- The app should feel instant.
+- The app should feel visual.
+- The app should feel like real-world vocabulary, not a school worksheet.
 
-The current focus is building the core vocabulary and training flow before adding camera-based object recognition.
+## Key Documents
 
-## Screens
-
-Screens currently implemented:
-
-- Home screen
-- Word list screen
-- Add word screen
-- Training screen
-- Result screen
-
-## Development Notes
-
-This repository started as a Flutter prototype and is being developed step by step.
-
-The current architecture uses a simple in-memory app state. Persistent storage and camera features will be added later.
+- `VISION.md` describes the product vision.
+- `UI_SPEC.md` describes the intended UI and interaction model.
+- `DESIGN_SYSTEM.md` describes the design principles, visual language, components, and motion behavior.
+- `TECHNICAL_DECISIONS.md` describes MVP sequencing and technical constraints.
+- `ROADMAP.md` describes the high-level phased development.
+- `AGENTS.md` gives coding agents project-specific guidance.

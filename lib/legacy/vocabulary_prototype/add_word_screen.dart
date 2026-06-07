@@ -67,81 +67,57 @@ class _AddWordScreenState extends State<AddWordScreen> {
               'Neues Wort',
               style: Theme.of(
                 context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
             ),
-
             const SizedBox(height: 8),
-
             Text(
               'Füge ein Wort mit richtiger Übersetzung und drei falschen Antworten hinzu.',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
             ),
-
             const SizedBox(height: 24),
-
-            TextField(
+            _WordTextField(
               controller: sourceController,
-              decoration: const InputDecoration(
-                labelText: 'Wort',
-                hintText: 'z. B. tidur',
-                border: OutlineInputBorder(),
-              ),
+              icon: Icons.record_voice_over_rounded,
+              label: 'Wort',
+              hint: 'z. B. tidur',
             ),
-
             const SizedBox(height: 16),
-
-            TextField(
+            _WordTextField(
               controller: targetController,
-              decoration: const InputDecoration(
-                labelText: 'Richtige Übersetzung',
-                hintText: 'z. B. schlafen',
-                border: OutlineInputBorder(),
-              ),
+              icon: Icons.translate_rounded,
+              label: 'Richtige Übersetzung',
+              hint: 'z. B. schlafen',
             ),
-
             const SizedBox(height: 24),
-
             Text(
               'Falsche Antworten',
               style: Theme.of(
                 context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
-
             const SizedBox(height: 12),
-
-            TextField(
+            _WordTextField(
               controller: wrongAnswer1Controller,
-              decoration: const InputDecoration(
-                labelText: 'Falsche Antwort 1',
-                border: OutlineInputBorder(),
-              ),
+              icon: Icons.close_rounded,
+              label: 'Falsche Antwort 1',
             ),
-
             const SizedBox(height: 16),
-
-            TextField(
+            _WordTextField(
               controller: wrongAnswer2Controller,
-              decoration: const InputDecoration(
-                labelText: 'Falsche Antwort 2',
-                border: OutlineInputBorder(),
-              ),
+              icon: Icons.close_rounded,
+              label: 'Falsche Antwort 2',
             ),
-
             const SizedBox(height: 16),
-
-            TextField(
+            _WordTextField(
               controller: wrongAnswer3Controller,
-              decoration: const InputDecoration(
-                labelText: 'Falsche Antwort 3',
-                border: OutlineInputBorder(),
-              ),
+              icon: Icons.close_rounded,
+              label: 'Falsche Antwort 3',
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _saveWord(),
             ),
-
             const SizedBox(height: 24),
-
             FilledButton.icon(
               onPressed: _saveWord,
               icon: const Icon(Icons.save_rounded),
@@ -149,6 +125,38 @@ class _AddWordScreenState extends State<AddWordScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _WordTextField extends StatelessWidget {
+  const _WordTextField({
+    required this.controller,
+    required this.icon,
+    required this.label,
+    this.hint,
+    this.textInputAction = TextInputAction.next,
+    this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final IconData icon;
+  final String label;
+  final String? hint;
+  final TextInputAction textInputAction;
+  final ValueChanged<String>? onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      textInputAction: textInputAction,
+      onSubmitted: onSubmitted,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon),
+        labelText: label,
+        hintText: hint,
       ),
     );
   }

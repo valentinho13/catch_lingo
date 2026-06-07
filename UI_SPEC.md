@@ -1,86 +1,105 @@
 # CatchLingo UI Specification
 
-## Purpose of this document
+## Purpose
 
 This document describes the intended user interface, interaction model, camera behavior, buttons, animations, and visual direction for CatchLingo.
 
-It should help AI coding agents and human developers understand what the app should feel like before implementing features.
-
 The goal is not to build everything at once.
-The goal is to keep every implementation step aligned with the product vision.
 
----
+The goal is to keep every implementation step aligned with the product vision:
+
+> Real-world vocabulary discovery through camera-based exploration.
+
+## Core UX Idea
+
+The user should feel:
+
+> “I am discovering words from the world around me.”
+
+The user should not feel:
+
+> “I am managing a vocabulary list.”
+
+The UI must support this core fantasy even before the real camera exists.
+
+Mock data should feel like a preview of a camera session, not like a random list of words.
 
 ## Product Feeling
 
-CatchLingo should feel simple, playful, modern, and exploratory.
+CatchLingo should feel:
 
-The user should not feel like they are using a technical object-recognition tool.
-The user should feel like they are catching words from the world.
-
-The app should feel closer to:
-
-- a discovery game
-- a travel companion
-- a personal vocabulary collection
-- a lightweight learning tool
+- simple
+- visual
+- calm
+- playful
+- modern
+- lightweight
+- travel-friendly
+- discovery-oriented
 
 It should not feel like:
 
+- homework
+- a technical ML demo
+- a dense dashboard
 - a school app
-- a complicated translator
-- a developer demo
-- a dashboard full of settings
+- a generic dictionary
+- a childish toy
 
 Core emotional goal:
 
-> “I discovered new words today.”
-
----
+> “I discovered a word from something I saw.”
 
 ## Visual Direction
 
 ### General Style
 
-CatchLingo should use a clean Material 3 inspired design.
+CatchLingo uses a clean Material 3 inspired design.
 
-The UI should feel:
+The UI should feel friendly, mobile-first, and smooth.
 
-- friendly
-- modern
-- calm
-- lightweight
-- slightly playful
-- mobile-first
+Avoid:
 
-Avoid heavy enterprise-style UI.
-Avoid too many controls on one screen.
-Avoid dense settings screens early in development.
+- too many controls
+- dense settings
+- heavy enterprise UI
+- fake gamification clutter
+- excessive badges
+- aggressive particles
+- casino-style rewards
 
----
+Prefer:
+
+- large touch targets
+- clear hierarchy
+- soft cards
+- readable words
+- gentle motion
+- beautiful empty states
+- strong visual focus on the catch moment
 
 ## Color Direction
 
 The MVP can use a simple seed color system.
 
-Suggested primary direction:
+Suggested direction:
 
-- Indigo / blue-violet as primary app color
-- White or near-white backgrounds in light mode
-- Deep dark navy / charcoal backgrounds in dark mode later
-- Accent highlights for collected words
+- primary: indigo / blue-violet
+- secondary: teal / green-blue
+- success: soft green
+- background: white / near-white
+- surface: soft elevated cards
+- dark mode later: deep navy / charcoal
 
-Example visual associations:
+Semantic color use:
 
-- primary: exploration, technology, trust
-- green highlight: newly collected word
-- amber highlight: word needs review
-- muted gray: already known word
+- primary: exploration and main action
+- green: caught / success
+- amber: review / attention
+- muted gray: known / inactive
+- soft lavender: discovery / suggestion
 
-The first MVP does not need a full custom design system.
-Material 3 theming is enough.
-
----
+Avoid overly saturated toy colors.
 
 ## Typography
 
@@ -88,34 +107,40 @@ Text should be clear and readable.
 
 Important words should be large enough to read quickly during camera use.
 
-Suggested hierarchy:
+Hierarchy:
 
 - App title: large, bold
-- Screen title: medium-large, bold
-- Word labels: bold and very readable
-- Subtitles: soft, calm, medium size
-- Metadata: smaller and muted
+- Screen title: medium-large
+- Caught words: bold and highly readable
+- Translations: smaller, calm
+- Metadata: muted
+- Helper text: short and clear
 
-Avoid tiny text in camera mode.
-Users may be walking, moving, or outside in daylight.
+Avoid tiny text in Explore Mode.
 
----
+Users may be moving, walking, or outside.
 
 ## Navigation Model
 
-The app should start simple.
+For MVP, use simple navigation:
 
-Main navigation should eventually include:
+- Home
+- Explore Mode
+- Dictionary
+
+Do not add a full bottom navigation until the app has enough real modes to justify it.
+
+Future navigation may include:
 
 1. Explore
 2. Dictionary
 3. Review
-4. Profile / Settings
+4. Sessions / History
+5. Profile / Settings
 
-For MVP, avoid a full bottom navigation if it is not needed.
-Start with a home screen that routes to future modes.
+For now:
 
-Future version can use bottom navigation once multiple areas exist.
+> Start simple. Keep the experience focused.
 
 ---
 
@@ -125,54 +150,93 @@ Future version can use bottom navigation once multiple areas exist.
 
 ### Purpose
 
-The home screen introduces CatchLingo and gives the user a clear starting point.
+The Home screen introduces CatchLingo and gives the user a clear start.
 
-It should not be crowded.
-It should make the app feel like a real product instead of the default Flutter demo.
+It should feel like opening a real product.
 
-### Layout
+It should communicate:
 
-From top to bottom:
+> The world around you can become vocabulary.
 
-1. App logo or icon placeholder
-2. App name: `CatchLingo`
-3. Subtitle: `Catch words from the world around you.`
-4. Primary button: `Start Exploring`
-5. Secondary button: `My Dictionary`
-6. Small status text, for example: `No words collected yet.`
+### Required Elements
 
-### Buttons
+- App identity
+- App name: `CatchLingo`
+- Primary message
+- Primary action: `Start Exploring`
+- Secondary action: `My Dictionary`
+- Short collection status
+- visual hint of word discovery
 
-#### Start Exploring
+### Preferred Copy
 
-Primary action.
-Large filled button.
-Should open Explore Mode.
+Title:
 
-For early MVP, it can navigate to a placeholder Explore screen.
+```text
+CatchLingo
+```
 
-#### My Dictionary
+Subtitle options:
 
-Secondary action.
-Outlined or tonal button.
-Should open Dictionary screen.
+```text
+Discover language in the real world.
+```
 
-For early MVP, it can navigate to a placeholder Dictionary screen.
+or
+
+```text
+Point. Discover. Remember.
+```
+
+or
+
+```text
+Catch words from the world around you.
+```
+
+Primary button:
+
+```text
+Start Exploring
+```
+
+Secondary button:
+
+```text
+My Dictionary
+```
+
+Empty state:
+
+```text
+No words caught yet.
+Start exploring to catch your first real-world words.
+```
+
+### Visual Direction
+
+The Home screen may show:
+
+- soft hero card
+- app icon / camera-word symbol
+- floating word chips
+- gentle gradient
+- discovery preview
+
+The hero should not look like a random marketing card.
+
+It should hint at the future camera experience.
 
 ### Animation
 
 On app start:
 
-- Logo/icon fades in
-- Title slides/fades in slightly
-- Buttons appear with a short delay
+- hero fades/slides in
+- title follows
+- actions appear with short stagger
+- motion duration: 250-500 ms
 
-Animation should be subtle.
-No excessive bouncing, particles, or childish effects.
-
-Suggested duration:
-
-- 250-500 ms
+No excessive bouncing.
 
 ---
 
@@ -182,276 +246,218 @@ Suggested duration:
 
 Explore Mode is the heart of CatchLingo.
 
-The user points the camera at the world.
-The app detects possible objects or visual concepts.
-Detected words are collected into the current session.
+Eventually, this screen will show the camera.
 
-This mode should feel like casting a net over the environment and catching words.
+For now, mock detections should simulate a camera-based discovery session.
 
-### Core Behavior
+The user should understand:
 
-Explore Mode should:
+> In the future, I will point the camera at real things and catch the words.
 
-- show a live camera preview
-- analyze frames at a controlled rate
-- detect objects or labels
-- show detected word candidates
-- collect new words into the current session
-- avoid duplicate words within the same session
-- show feedback when a new word is collected
+### MVP Explore Screen
 
-### Important Principle
+Until real camera integration exists, Explore Mode should look like a discovery preview.
 
-The camera is not the product.
-The collection loop is the product.
+Avoid labeling it as a boring mock list.
 
-The UI should focus on:
+Better labels:
 
-- what was discovered
-- what was collected
-- what is new
-- what can be reviewed later
+```text
+Discovery preview
+```
 
----
+```text
+Camera preview coming soon
+```
 
-## Explore Mode Layout
+```text
+Words nearby
+```
 
-### Camera Preview
+The screen should show:
 
-The camera preview should fill most or all of the screen.
+- a large discovery area
+- mock detected word chips
+- session counter
+- catch feedback
+- nearby word candidates
+- clear tap-to-catch interaction
 
-Overlay elements should float above the camera preview.
+### Camera Preview Later
 
-The UI should not block the center of the camera view unnecessarily.
+When camera is implemented:
+
+- camera preview fills most of the screen
+- overlay UI floats above it
+- center stays mostly unobstructed
+- detected words appear as stable chips
+- collection feedback appears without blocking the camera
 
 ### Top Area
 
 Suggested elements:
 
-- Back button or close button
-- Current session name or generic label: `Exploring`
-- Small counter: `12 words caught`
+```text
+← Explore Mode        3 caught
+```
+
+Top area should include:
+
+- back button
+- screen title
+- session counter chip
+
+### Discovery Area
+
+For MVP:
+
+- large rounded preview panel
+- soft gradient or abstract world/camera background
+- floating detected word chips
+- label such as `Discovery preview`
+
+For future:
+
+- live camera preview
+- overlay chips near detected objects or in a stable floating layer
+
+### Word Candidate Chip
+
+A detected word chip should have states:
+
+#### Uncaught
 
 Example:
 
-`← Exploring     12 caught`
+```text
++ chair
+tap to catch
+```
 
-### Center Area
+Visual:
 
-This area shows camera content.
+- white or soft surface
+- plus icon
+- calm border
+- touchable
+- clear affordance
 
-Detected object labels may appear as floating chips or small cards.
+#### Catching
 
-Example:
+Short transitional state after tap.
 
-- `kursi`
-- `meja`
-- `botol`
+Visual:
 
-Labels should not constantly flicker.
-They should appear stable and smooth.
+- slight scale
+- brief glow or brighten
+- quick response
 
-### Bottom Area
-
-Suggested bottom panel:
-
-- current latest collected word
-- session progress
-- button to pause/stop session
-
-Example:
-
-`+ kursi added`
-
-Buttons:
-
-- `Pause`
-- `Finish`
-
-For MVP, a simple bottom bar is enough.
-
----
-
-## Object Label UI
-
-### Detected Candidate Chip
-
-When the app detects an object, it can show a chip near the object or in a floating list.
+#### Caught
 
 Example:
 
-`chair 92%`
+```text
+✓ kursi
+caught · chair
+```
 
-After mapping to the target language:
+Visual:
 
-`kursi`
-
-Optional subtitle:
-
-`chair · 92%`
-
-### States
-
-#### New Word
-
-Visual style:
-
-- highlighted chip
-- green or primary accent
-- small plus icon
-
-Example:
-
-`+ kursi`
-
-#### Already Collected
-
-Visual style:
-
-- muted chip
+- soft green background
 - check icon
+- target word prominent
+- source meaning visible
+- no duplicate count increase
+
+#### Already Caught
+
+If tapped again:
+
+- do not count again
+- subtle feedback only
 
 Example:
 
-`✓ kursi`
+```text
+Already caught
+```
 
-#### Low Confidence
+### Catch Behavior
 
-Visual style:
+When user taps an uncaught word:
 
-- muted / dotted / warning subtle
-- not automatically collected
+1. Chip reacts immediately
+2. Word becomes caught
+3. Translation becomes visible
+4. Session counter increments
+5. Counter pulses briefly
+6. Feedback appears
 
-Example:
+Example feedback:
 
-`chair?`
+```text
++ kursi caught
+```
 
-Low-confidence words should not be added automatically unless confirmed.
+or
 
----
+```text
+New word caught: kursi
+```
 
-## Collection Behavior
+This should feel satisfying but not childish.
 
-### Auto Collect Mode
+### Translation Reveal
 
-In Auto Collect Mode, the app automatically adds newly detected words to the current session if:
+Before catching, the chip can show source word:
 
-- confidence is high enough
-- the object is recognized consistently
-- the word is not already in the session
-- the word is not already known by the user, depending on settings
+```text
+chair
+tap to catch
+```
 
-Suggested MVP rule:
+After catching, reveal target word and source meaning:
 
-- collect if confidence is above threshold
-- ignore duplicates in current session
+```text
+kursi
+caught · chair
+```
 
-### Tap Mode
+This makes catching feel like unlocking the word.
 
-In Tap Mode, detected words are shown but not collected until the user taps them.
+### Collection Feedback
 
-Tap Mode is better for accuracy.
-Auto Collect Mode is better for magic.
+Feedback should be:
 
-Both modes should exist eventually.
+- visible
+- friendly
+- short-lived
+- in-app styled
+- not a generic system snackbar if possible
 
-### Session Collection
+Suggested placement:
 
-Each Explore session should store:
+- below discovery panel
+- above `Words nearby`
+- or floating bottom notification
 
-- timestamp
-- optional location label later
-- list of discovered words
-- detected source labels
-- target-language translation
-- whether word was new or already known
+Duration:
 
-For MVP, local in-memory or simple local storage is enough.
-
----
-
-## Explore Mode Animations
-
-### Word Caught Animation
-
-When a new word is collected:
-
-1. Detected chip appears
-2. Chip briefly expands or brightens
-3. A small `+ word` notification appears
-4. Word moves or fades toward the bottom collection area
-5. Counter increases
-
-This should feel satisfying but not distracting.
-
-Suggested duration:
-
-- chip feedback: 150-250 ms
-- notification: 1.5-2 seconds
-- counter update: instant or subtle scale pulse
+- 1.5-2 seconds
 
 ### Counter Animation
 
-When a new word is collected:
+When a word is caught:
 
-- counter briefly scales to 1.05 or 1.1
-- returns to normal
+- session counter briefly scales to 1.05 or 1.1
+- returns smoothly
+- duration: 150-250 ms
 
-Avoid aggressive animation.
+### Duplicate Prevention
 
-### Session End Animation
+Already caught words must not be counted again.
 
-When the user taps `Finish`:
-
-- camera fades or blurs slightly
-- session summary panel slides up
-
----
-
-## Camera Functional Behavior
-
-### MVP Camera Rules
-
-The camera should:
-
-- start only after permission is granted
-- show a clear permission explanation if needed
-- analyze frames at a low rate
-- avoid analyzing every frame
-- prevent device overheating
-- keep UI responsive
-
-Suggested MVP analysis frequency:
-
-- 1 frame per second
-
-Later versions can adjust dynamically.
-
-### Performance Rules
-
-The app should not attempt to run detection at full video frame rate.
-
-The app should:
-
-- throttle detection
-- ignore frames while detection is already running
-- cache recent results
-- avoid repeated duplicate processing
-- keep animations lightweight
-
-### Detection Stability
-
-To avoid flickering, a label should only be shown or collected if:
-
-- confidence is high enough
-- result appears consistently
-- or user taps to confirm it
-
-Future rule example:
-
-- same label detected 2 times within 3 seconds
-
-MVP can be simpler.
+The UI should make the state obvious.
 
 ---
 
@@ -459,28 +465,47 @@ MVP can be simpler.
 
 ### Purpose
 
-After exploring, the user sees what was collected.
+After exploring, the user sees what was caught.
 
 This is the reward screen.
-It should make the user feel progress.
+
+It should feel like:
+
+> Here are the words from this moment.
+
+Not:
+
+> Here is a database export.
 
 ### Layout
 
 Header:
 
-`Session Complete`
+```text
+Session Complete
+```
 
 Summary:
 
-- `18 words caught`
-- `7 new words`
-- `11 already known`
+- words caught
+- new words
+- already known words
+
+Example:
+
+```text
+18 words caught
+7 new
+11 already known
+```
 
 List:
 
-- kursi — chair / Stuhl
-- meja — table / Tisch
-- botol — bottle / Flasche
+```text
+kursi — chair
+meja — table
+botol — bottle
+```
 
 Actions:
 
@@ -488,13 +513,18 @@ Actions:
 - `Save to Dictionary`
 - `Done`
 
-### Animation
+### Future Context
 
-The summary should slide up from the bottom or fade in.
-The number of collected words can count up quickly.
+Later, session summaries may include:
 
-Keep it elegant.
-No casino-machine effect.
+- date
+- location label
+- session name
+- travel memory
+- photo snapshot
+- category
+
+Do not build this too early.
 
 ---
 
@@ -502,109 +532,121 @@ No casino-machine effect.
 
 ### Purpose
 
-The Dictionary is the user’s personal collection of discovered words.
+The Dictionary is the personal memory of caught words.
 
-It should feel personal and rewarding.
+It should feel like a collection of real-world discoveries.
+
+Not like a school vocabulary table.
 
 ### Layout
 
 Top:
 
 - title: `My Dictionary`
-- search field
+- optional search field later
 - filter chips
 
 Filters:
 
 - All
 - New
-- Learned
-- Needs Review
-- Categories later
+- Learning
+- Known
 
-Word list item:
-
-- target word: `kursi`
-- source meaning: `chair / Stuhl`
-- category: `Home`
-- status indicator: new / learning / known
-
-### Empty State
-
-If no words exist:
-
-`No words collected yet.`
-
-Subtitle:
-
-`Start exploring to catch your first words.`
-
-Button:
-
-`Start Exploring`
-
----
-
-## 5. Word Detail Screen / Bottom Sheet
-
-### Purpose
-
-When a user taps a word, they should see more information.
-
-### Content
+Word card:
 
 - target word
-- source language meaning
-- pronunciation button
-- example sentence later
+- source meaning
 - category
-- learned status
-- button to add/remove from flashcards
+- status
+- caught context later
 
 Example:
 
-`kursi`
+```text
+kursi
+chair
+Home · New
+```
 
-`chair · Stuhl`
+### Empty State
 
-Buttons:
+If no real words are collected:
 
-- `Play pronunciation`
-- `Add to Flashcards`
-- `Mark as Known`
+```text
+No words caught yet.
+Start exploring to catch your first real-world words.
+```
 
-For MVP, this can be a simple bottom sheet.
+Button:
+
+```text
+Start Exploring
+```
+
+### Dictionary Tone
+
+Use words like:
+
+- caught
+- discovered
+- found
+- remembered
+- review
+
+Avoid words like:
+
+- database
+- entries
+- manual vocabulary
+- lesson list
 
 ---
 
-## 6. Flashcard Mode
+## 5. Word Detail
 
-### Purpose
+Word detail can be a bottom sheet.
 
-Flashcard Mode turns collected words into learning material.
+Content:
 
-### Basic Card
+- target word
+- source meaning
+- category
+- status
+- pronunciation later
+- caught date/session later
+- review action later
+
+For MVP, keep it simple.
+
+---
+
+## 6. Review / Flashcard Mode
+
+Review exists to help remember caught words.
+
+It is not the main product identity.
+
+A simple future flashcard:
 
 Front:
 
-`kursi`
+```text
+kursi
+```
 
 Back:
 
-`chair / Stuhl`
+```text
+chair
+```
 
-Optional later:
-
-- image snapshot
-- example sentence
-- pronunciation
-
-### Buttons
+Actions:
 
 - `I knew this`
 - `Review again`
 
-For MVP, flashcards can be a placeholder.
+Do not build full spaced repetition too early.
 
 ---
 
@@ -612,115 +654,120 @@ For MVP, flashcards can be a placeholder.
 
 ## Primary Buttons
 
-Used for main actions:
+Use for main actions:
 
 - Start Exploring
 - Review Now
 - Save to Dictionary
 
-Visual style:
+Style:
 
 - filled
-- large touch target
-- clear icon if helpful
+- large
+- clear
+- accessible
 
 ## Secondary Buttons
 
-Used for supportive actions:
+Use for supporting actions:
 
 - My Dictionary
 - Done
 - Later
 
-Visual style:
+Style:
 
 - outlined or tonal
 
 ## Destructive Buttons
 
-Used rarely:
+Rare:
 
-- Delete word
-- Clear session
+- delete word
+- clear session
 
-Should require confirmation.
+Always confirm.
 
 ---
 
-# Animation Principles
+# Motion Principles
 
-Animations should support the feeling of discovery.
+Motion should support discovery.
 
-Use animations for:
+Use motion for:
 
-- word collected
-- counter increase
+- catch confirmation
+- translation reveal
+- counter pulse
 - screen transitions
 - bottom sheet appearance
 - session summary
 
-Avoid animations that:
+Avoid motion that:
 
-- slow down interaction
-- distract from camera use
-- make the app feel childish
-- reduce performance
-
-Animation should be quick, smooth, and subtle.
+- slows the user down
+- feels childish
+- hurts performance
+- distracts from camera use
 
 Preferred durations:
 
-- micro-interaction: 100-250 ms
+- micro interaction: 100-250 ms
 - screen transition: 250-400 ms
 - feedback notification: 1.5-2 seconds
 
 ---
 
-# MVP UI Scope
+# Camera Behavior Later
 
-The first useful UI milestone should include only:
+When camera is added:
 
-1. Home screen
-2. Placeholder Explore screen
-3. Placeholder Dictionary screen
-4. Clean navigation between those screens
-5. Modern Material 3 styling
-6. No camera implementation yet
+- request permission clearly
+- explain why camera is needed
+- start camera only after permission
+- analyze at a controlled rate
+- do not process every frame
+- avoid overheating
+- keep UI responsive
 
-The second UI milestone can include:
+Suggested early detection rate:
 
-1. Camera permission screen
-2. Camera preview
-3. Fake detected word chips
-4. Session counter
-5. Finish session button
+- around 1 frame per second
 
-The third UI milestone can include:
+Detection should avoid flicker.
 
-1. Real object detection
-2. Real collection behavior
-3. Session summary
-4. Local session storage
+A word should only appear or be caught if:
+
+- confidence is high enough
+- result is stable enough
+- or user taps to confirm
+
+MVP can be simpler.
 
 ---
 
-# Do Not Build Yet
+# MVP UI Scope
 
-Avoid implementing these too early:
+Current useful MVP scope:
 
-- login
-- cloud sync
-- payment
-- user accounts
-- advanced AI explanations
-- complex settings
-- full spaced repetition system
-- multi-language marketplace
-- real AR anchoring
-- video recording
+1. Home screen
+2. Explore Mode without real camera
+3. Mock detected word chips
+4. Tap-to-catch
+5. Translation reveal
+6. Session counter
+7. Collection feedback
+8. Dictionary preview
+9. Clean Material 3 styling
 
-These are future features.
-The MVP must stay small.
+Not yet:
+
+- real camera
+- ML Kit
+- accounts
+- cloud
+- complex review
+- advanced settings
 
 ---
 
@@ -728,34 +775,13 @@ The MVP must stay small.
 
 When coding from this UI specification, Codex should:
 
-1. Read `VISION.md` first.
-2. Read this file second.
-3. Implement only the requested milestone.
-4. Avoid adding unnecessary packages.
-5. Keep Flutter code simple and readable.
-6. Prefer small widgets over one giant `main.dart` file as the app grows.
-7. Run `flutter analyze` after changes.
-8. Do not implement future features unless explicitly requested.
-
----
-
-# First Practical Task
-
-The first implementation task should be:
-
-Replace the default Flutter counter app with a modern CatchLingo home screen.
-
-Required elements:
-
-- App name: CatchLingo
-- Subtitle: Catch words from the world around you.
-- Primary button: Start Exploring
-- Secondary button: My Dictionary
-- Empty state text: No words collected yet.
-- Material 3 enabled
-- Debug banner disabled
-- No additional packages
-
-This should be committed as:
-
-`Replace demo counter with CatchLingo home screen`
+1. Read `AGENTS.md` first.
+2. Read `DESIGN_SYSTEM.md` second.
+3. Read `VISION.md` third.
+4. Implement only the requested milestone.
+5. Avoid unnecessary packages.
+6. Keep Flutter code simple.
+7. Prefer small widgets.
+8. Run `flutter analyze`.
+9. Run `flutter test`.
+10. Do not implement future features unless explicitly requested.

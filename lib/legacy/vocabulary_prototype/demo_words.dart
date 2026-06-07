@@ -8,6 +8,18 @@ class DemoWord {
   final String source;
   final String target;
   final List<String> wrongAnswers;
+
+  factory DemoWord.fromMap(Map<String, dynamic> map) {
+    return DemoWord(
+      source: map['source'] as String,
+      target: map['target'] as String,
+      wrongAnswers: List<String>.from(map['wrongAnswers'] as List),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {'source': source, 'target': target, 'wrongAnswers': wrongAnswers};
+  }
 }
 
 const demoWords = [

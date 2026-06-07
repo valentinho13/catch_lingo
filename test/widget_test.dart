@@ -1,30 +1,49 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:catch_lingo/app/catch_lingo_app.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:catch_lingo/main.dart';
-
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('shows the CatchLingo start screen', (tester) async {
+    await tester.pumpWidget(const CatchLingoApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('CatchLingo'), findsOneWidget);
+    expect(find.text('Catch words from the world around you.'), findsOneWidget);
+    expect(find.text('Start Exploring'), findsOneWidget);
+    expect(find.text('My Dictionary'), findsOneWidget);
+    expect(find.text('No words collected yet.'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('collects a mock discovery only once', (tester) async {
+    await tester.pumpWidget(const CatchLingoApp());
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.tap(find.text('Start Exploring'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Explore Mode'), findsOneWidget);
+    expect(find.text('Discovery preview'), findsOneWidget);
+    expect(find.text('Cafe table'), findsOneWidget);
+    expect(find.text('Words collected this session: 0'), findsOneWidget);
+    expect(find.text('Object'), findsWidgets);
+    expect(find.text('tap to reveal'), findsWidgets);
+    expect(find.text('chair'), findsNothing);
+    expect(find.text('kursi'), findsNothing);
+
+    final chairChip = find.byKey(const ValueKey('catch-chair'));
+
+    await tester.ensureVisible(chairChip);
+    await tester.tap(chairChip);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Words collected this session: 1'), findsOneWidget);
+    expect(find.text('kursi'), findsWidgets);
+    expect(find.text('chair'), findsWidgets);
+    expect(find.text('chair found nearby'), findsOneWidget);
+    expect(find.text('kursi caught'), findsOneWidget);
+
+    await tester.ensureVisible(chairChip);
+    await tester.tap(chairChip);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Words collected this session: 1'), findsOneWidget);
   });
 }
