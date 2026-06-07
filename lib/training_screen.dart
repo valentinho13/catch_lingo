@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'demo_words.dart';
+import 'app_state.dart';
 
 class TrainingScreen extends StatefulWidget {
-  const TrainingScreen({super.key});
+  const TrainingScreen({super.key, required this.appState});
+
+  final AppState appState;
 
   @override
   State<TrainingScreen> createState() => _TrainingScreenState();
@@ -25,13 +27,13 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 
   List<String> _buildAnswers() {
-    final word = demoWords[currentIndex];
+    final word = widget.appState.words[currentIndex];
 
     return [word.target, ...word.wrongAnswers]..shuffle();
   }
 
   void _selectAnswer(String answer) {
-    final word = demoWords[currentIndex];
+    final word = widget.appState.words[currentIndex];
     final isCorrect = answer == word.target;
 
     setState(() {
@@ -46,7 +48,8 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 
   void _goToNextWord() {
-    final isLastWord = currentIndex == demoWords.length - 1;
+    final words = widget.appState.words;
+    final isLastWord = currentIndex == words.length - 1;
 
     setState(() {
       if (isLastWord) {
@@ -73,16 +76,18 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final words = widget.appState.words;
+
     if (isFinished) {
       return _TrainingResultScreen(
         correctCount: correctCount,
         wrongCount: wrongCount,
-        totalCount: demoWords.length,
+        totalCount: words.length,
         onRestart: _restartTraining,
       );
     }
 
-    final word = demoWords[currentIndex];
+    final word = words[currentIndex];
     final isAnswered = selectedAnswer != null;
     final isCorrect = selectedAnswer == word.target;
 
@@ -117,7 +122,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
               const SizedBox(height: 16),
 
               Text(
-                'Wort ${currentIndex + 1} von ${demoWords.length}',
+                'Wort ${currentIndex + 1} von ${words.length}',
                 textAlign: TextAlign.center,
                 style: Theme.of(
                   context,
@@ -200,7 +205,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
               FilledButton(
                 onPressed: isAnswered ? _goToNextWord : null,
                 child: Text(
-                  currentIndex == demoWords.length - 1
+                  currentIndex == words.length - 1
                       ? 'Ergebnis anzeigen'
                       : 'Nächstes Wort',
                 ),

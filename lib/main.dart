@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 
-import 'word_list_screen.dart';
+import 'app_state.dart';
 import 'training_screen.dart';
+import 'word_list_screen.dart';
 
 void main() {
   runApp(const CatchLingoApp());
 }
 
-class CatchLingoApp extends StatelessWidget {
+class CatchLingoApp extends StatefulWidget {
   const CatchLingoApp({super.key});
+
+  @override
+  State<CatchLingoApp> createState() => _CatchLingoAppState();
+}
+
+class _CatchLingoAppState extends State<CatchLingoApp> {
+  final appState = AppState();
 
   @override
   Widget build(BuildContext context) {
@@ -22,13 +30,15 @@ class CatchLingoApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const StartScreen(),
+      home: StartScreen(appState: appState),
     );
   }
 }
 
 class StartScreen extends StatelessWidget {
-  const StartScreen({super.key});
+  const StartScreen({super.key, required this.appState});
+
+  final AppState appState;
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +83,9 @@ class StartScreen extends StatelessWidget {
               FilledButton.icon(
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const TrainingScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => TrainingScreen(appState: appState),
+                    ),
                   );
                 },
                 icon: const Icon(Icons.play_arrow_rounded),
@@ -85,7 +97,9 @@ class StartScreen extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const WordListScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => WordListScreen(appState: appState),
+                    ),
                   );
                 },
                 icon: const Icon(Icons.collections_bookmark_rounded),
