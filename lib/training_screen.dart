@@ -11,6 +11,9 @@ class TrainingScreen extends StatefulWidget {
 
 class _TrainingScreenState extends State<TrainingScreen> {
   int currentIndex = 0;
+  int correctCount = 0;
+  int wrongCount = 0;
+
   String? selectedAnswer;
   late List<String> answers;
 
@@ -27,8 +30,17 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 
   void _selectAnswer(String answer) {
+    final word = demoWords[currentIndex];
+    final isCorrect = answer == word.target;
+
     setState(() {
       selectedAnswer = answer;
+
+      if (isCorrect) {
+        correctCount++;
+      } else {
+        wrongCount++;
+      }
     });
   }
 
@@ -54,6 +66,28 @@ class _TrainingScreenState extends State<TrainingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _ScoreCard(
+                      label: 'Richtig',
+                      value: correctCount,
+                      icon: Icons.check_circle_rounded,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ScoreCard(
+                      label: 'Falsch',
+                      value: wrongCount,
+                      icon: Icons.cancel_rounded,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
               Text(
                 'Wort ${currentIndex + 1} von ${demoWords.length}',
                 textAlign: TextAlign.center,
@@ -141,6 +175,40 @@ class _TrainingScreenState extends State<TrainingScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ScoreCard extends StatelessWidget {
+  const _ScoreCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final int value;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              '$label: $value',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       ),
     );
