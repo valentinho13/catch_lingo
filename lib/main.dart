@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'word_list_screen.dart';
+import 'training_screen.dart';
 
 void main() {
   runApp(const CatchLingoApp());
@@ -71,10 +72,8 @@ class StartScreen extends StatelessWidget {
 
               FilledButton.icon(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Training kommt als Nächstes.'),
-                    ),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const TrainingScreen()),
                   );
                 },
                 icon: const Icon(Icons.play_arrow_rounded),
