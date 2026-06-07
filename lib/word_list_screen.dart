@@ -36,6 +36,27 @@ class _WordListScreenState extends State<WordListScreen> {
     );
   }
 
+  void _deleteWord(int index) {
+    final word = widget.appState.words[index];
+
+    final wasRemoved = widget.appState.removeWordAt(index);
+
+    if (!wasRemoved) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Mindestens ein Wort muss bleiben. Keine Anarchie.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {});
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${word.source} wurde gelöscht.')));
+  }
+
   @override
   Widget build(BuildContext context) {
     final words = widget.appState.words;
@@ -66,7 +87,11 @@ class _WordListScreenState extends State<WordListScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(word.target),
-              trailing: const Icon(Icons.chevron_right_rounded),
+              trailing: IconButton(
+                onPressed: () => _deleteWord(index),
+                icon: const Icon(Icons.delete_rounded),
+                tooltip: 'Wort löschen',
+              ),
             ),
           );
         },
