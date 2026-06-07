@@ -9,7 +9,7 @@ class TrainingScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final word = demoWords.first;
 
-    final answers = [word.target, ...word.wrongAnswers];
+    final answers = [word.target, ...word.wrongAnswers]..shuffle();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Training')),
