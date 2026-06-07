@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 
+import 'demo_words.dart';
+
 class TrainingScreen extends StatelessWidget {
   const TrainingScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const sourceWord = 'makan';
+    final word = demoWords.first;
 
-    const answers = ['essen', 'trinken', 'Haus', 'Straße'];
+    final answers = [word.target, ...word.wrongAnswers];
 
     return Scaffold(
       appBar: AppBar(title: const Text('Training')),
@@ -35,7 +37,7 @@ class TrainingScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.all(32),
                   child: Text(
-                    sourceWord,
+                    word.source,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -52,14 +54,14 @@ class TrainingScreen extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: OutlinedButton(
                     onPressed: () {
-                      final isCorrect = answer == 'essen';
+                      final isCorrect = answer == word.target;
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
                             isCorrect
-                                ? 'Richtig. Du bist heute ausnahmsweise nützlich.'
-                                : 'Leider falsch. Flutter urteilt nicht, ich schon.',
+                                ? 'Richtig.'
+                                : 'Leider falsch. Richtig wäre: ${word.target}',
                           ),
                         ),
                       );
