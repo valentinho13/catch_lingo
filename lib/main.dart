@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_state.dart';
+import 'catch_lingo_background.dart';
 import 'training_screen.dart';
 import 'word_list_screen.dart';
 
@@ -43,87 +44,100 @@ class StartScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Spacer(),
+      body: CatchLingoBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Spacer(),
 
-              const Icon(
-                Icons.translate_rounded,
-                size: 88,
-                color: Color(0xFF5B5FEF),
-              ),
-
-              const SizedBox(height: 24),
-
-              Text(
-                'CatchLingo',
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-
-              const SizedBox(height: 12),
-
-              Text(
-                'Sammle Wörter, trainiere sie spielerisch und bleib an deinen Sprachen dran.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.black54,
-                  height: 1.4,
+                const Icon(
+                  Icons.translate_rounded,
+                  size: 88,
+                  color: Color(0xFF5B5FEF),
                 ),
-              ),
 
-              const Spacer(),
+                const SizedBox(height: 24),
 
-              FilledButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => TrainingScreen(appState: appState),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.play_arrow_rounded),
-                label: const Text('Training starten'),
-              ),
+                Text(
+                  'CatchLingo',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
 
-              const SizedBox(height: 12),
+                const SizedBox(height: 12),
 
-              OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => WordListScreen(appState: appState),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.collections_bookmark_rounded),
-                label: const Text('Meine Wörter'),
-              ),
+                Text(
+                  'Sammle Wörter, trainiere sie spielerisch und bleib an deinen Sprachen dran.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Colors.black54,
+                    height: 1.4,
+                  ),
+                ),
 
-              const SizedBox(height: 12),
+                const Spacer(),
 
-              TextButton.icon(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Einstellungen später. Erstmal laufen lernen.',
+                FilledButton.icon(
+                  onPressed: () {
+                    if (appState.words.length < 2) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Bitte füge erst mindestens 2 Wörter hinzu.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => TrainingScreen(appState: appState),
                       ),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.settings_rounded),
-                label: const Text('Einstellungen'),
-              ),
+                    );
+                  },
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('Training starten'),
+                ),
 
-              const SizedBox(height: 16),
-            ],
+                const SizedBox(height: 12),
+
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => WordListScreen(appState: appState),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.collections_bookmark_rounded),
+                  label: const Text('Meine Wörter'),
+                ),
+
+                const SizedBox(height: 12),
+
+                TextButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Einstellungen später. Erstmal laufen lernen.',
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.settings_rounded),
+                  label: const Text('Einstellungen'),
+                ),
+
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
       ),
