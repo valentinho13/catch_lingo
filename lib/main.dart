@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'word_list_screen.dart';
+
 void main() {
   runApp(const CatchLingoApp());
 }
@@ -83,12 +85,8 @@ class StartScreen extends StatelessWidget {
 
               OutlinedButton.icon(
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Wortliste kommt gleich, mein ungeduldiger Architekt.',
-                      ),
-                    ),
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const WordListScreen()),
                   );
                 },
                 icon: const Icon(Icons.collections_bookmark_rounded),
