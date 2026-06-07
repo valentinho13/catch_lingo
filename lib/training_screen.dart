@@ -16,6 +16,7 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
   String? selectedAnswer;
   late List<String> answers;
+  bool isFinished = false;
 
   @override
   void initState() {
@@ -45,15 +46,42 @@ class _TrainingScreenState extends State<TrainingScreen> {
   }
 
   void _goToNextWord() {
+    final isLastWord = currentIndex == demoWords.length - 1;
+
     setState(() {
-      currentIndex = (currentIndex + 1) % demoWords.length;
+      if (isLastWord) {
+        isFinished = true;
+        return;
+      }
+
+      currentIndex++;
       selectedAnswer = null;
+      answers = _buildAnswers();
+    });
+  }
+
+  void _restartTraining() {
+    setState(() {
+      currentIndex = 0;
+      correctCount = 0;
+      wrongCount = 0;
+      selectedAnswer = null;
+      isFinished = false;
       answers = _buildAnswers();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (isFinished) {
+      return _TrainingResultScreen(
+        correctCount: correctCount,
+        wrongCount: wrongCount,
+        totalCount: demoWords.length,
+        onRestart: _restartTraining,
+      );
+    }
+
     final word = demoWords[currentIndex];
     final isAnswered = selectedAnswer != null;
     final isCorrect = selectedAnswer == word.target;
@@ -171,7 +199,113 @@ class _TrainingScreenState extends State<TrainingScreen> {
 
               FilledButton(
                 onPressed: isAnswered ? _goToNextWord : null,
-                child: const Text('Nächstes Wort'),
+                child: Text(
+                  currentIndex == demoWords.length - 1
+                      ? 'Ergebnis anzeigen'
+                      : 'Nächstes Wort',
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TrainingResultScreen extends StatelessWidget {
+  const _TrainingResultScreen({
+    required this.correctCount,
+    required this.wrongCount,
+    required this.totalCount,
+    required this.onRestart,
+  });
+
+  final int correctCount;
+  final int wrongCount;
+  final int totalCount;
+  final VoidCallback onRestart;
+
+  @override
+  Widget build(BuildContext context) {
+    final percent = (correctCount / totalCount * 100).round();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Ergebnis')),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Spacer(),
+
+              Icon(
+                percent >= 80
+                    ? Icons.emoji_events_rounded
+                    : Icons.school_rounded,
+                size: 88,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+
+              const SizedBox(height: 24),
+
+              Text(
+                'Training abgeschlossen',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              Text(
+                '$percent % richtig',
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+
+              const SizedBox(height: 24),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _ScoreCard(
+                      label: 'Richtig',
+                      value: correctCount,
+                      icon: Icons.check_circle_rounded,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ScoreCard(
+                      label: 'Falsch',
+                      value: wrongCount,
+                      icon: Icons.cancel_rounded,
+                    ),
+                  ),
+                ],
+              ),
+
+              const Spacer(),
+
+              FilledButton.icon(
+                onPressed: onRestart,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Nochmal trainieren'),
+              ),
+
+              const SizedBox(height: 12),
+
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                icon: const Icon(Icons.home_rounded),
+                label: const Text('Zurück zum Start'),
               ),
             ],
           ),
