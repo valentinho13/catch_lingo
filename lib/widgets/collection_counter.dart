@@ -74,7 +74,7 @@ class _SessionCounter extends StatelessWidget {
             const SizedBox(width: CatchLingoSpacing.md),
             Expanded(
               child: Text(
-                'Words collected this session: $count',
+                '$count caught this session',
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),

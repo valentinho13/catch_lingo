@@ -9,6 +9,9 @@ void main() {
     expect(find.text('CatchLingo'), findsOneWidget);
     expect(find.text('Catch words from the world around you.'), findsOneWidget);
     expect(find.text('Start Exploring'), findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('My Dictionary'), 160);
+
     expect(find.text('My Dictionary'), findsOneWidget);
     expect(find.text('No words collected yet.'), findsOneWidget);
   });
@@ -22,9 +25,8 @@ void main() {
     expect(find.text('Explore Mode'), findsOneWidget);
     expect(find.text('Discovery preview'), findsOneWidget);
     expect(find.text('Cafe table'), findsOneWidget);
-    expect(find.text('Words collected this session: 0'), findsOneWidget);
+    expect(find.text('0 caught this session'), findsOneWidget);
     expect(find.text('Object'), findsWidgets);
-    expect(find.text('tap to reveal'), findsWidgets);
     expect(find.text('chair'), findsNothing);
     expect(find.text('kursi'), findsNothing);
 
@@ -34,16 +36,14 @@ void main() {
     await tester.tap(chairChip);
     await tester.pumpAndSettle();
 
-    expect(find.text('Words collected this session: 1'), findsOneWidget);
+    expect(find.text('1 caught this session'), findsOneWidget);
     expect(find.text('kursi'), findsWidgets);
     expect(find.text('chair'), findsWidgets);
-    expect(find.text('chair found nearby'), findsOneWidget);
-    expect(find.text('kursi caught'), findsOneWidget);
 
     await tester.ensureVisible(chairChip);
     await tester.tap(chairChip);
     await tester.pumpAndSettle();
 
-    expect(find.text('Words collected this session: 1'), findsOneWidget);
+    expect(find.text('1 caught this session'), findsOneWidget);
   });
 }

@@ -4,8 +4,11 @@ class CatchLingoColors {
   const CatchLingoColors._();
 
   static const seed = Color(0xFF5B5FEF);
-  static const background = Color(0xFFF7F8FC);
+  static const background = Color(0xFFF4F7FB);
   static const textPrimary = Color(0xFF202338);
+  static const textMuted = Color(0xFF6D7282);
+  static const discoverySurface = Color(0xFFEFF4FF);
+  static const tealAccent = Color(0xFF37BFA6);
   static const successSurface = Color(0xFFE5F7EF);
   static const successBorder = Color(0xFF65C99A);
   static const successText = Color(0xFF145C3F);
@@ -65,6 +68,7 @@ class CatchLingoTheme {
       cardTheme: CardThemeData(
         elevation: 0,
         color: Colors.white,
+        surfaceTintColor: Colors.white,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(CatchLingoRadius.card),

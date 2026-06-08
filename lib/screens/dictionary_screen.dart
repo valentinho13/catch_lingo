@@ -27,33 +27,49 @@ class DictionaryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('My Dictionary')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          children: [
-            const _DictionaryEmptyState(),
-            const SizedBox(height: CatchLingoSpacing.xl),
-            Text(
-              'Collection shelf preview',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: CatchLingoSpacing.sm),
-            Text(
-              'Caught words will live here after Explore sessions.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
-            ),
-            const SizedBox(height: CatchLingoSpacing.lg),
-            const _FilterPreview(),
-            const SizedBox(height: CatchLingoSpacing.lg),
-            for (final word in _previewWords) ...[
-              _DictionaryWordCard(word: word),
-              const SizedBox(height: CatchLingoSpacing.md),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [CatchLingoColors.background, Color(0xFFEFF8F6)],
+          ),
+        ),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+            children: [
+              const _DictionaryEmptyState(),
+              const SizedBox(height: CatchLingoSpacing.xl),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Recent catches',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                  const _ShelfCountPill(count: 2),
+                ],
+              ),
+              const SizedBox(height: CatchLingoSpacing.sm),
+              Text(
+                'A preview of words discovered from real scenes.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: CatchLingoColors.textMuted,
+                ),
+              ),
+              const SizedBox(height: CatchLingoSpacing.lg),
+              const _FilterPreview(),
+              const SizedBox(height: CatchLingoSpacing.lg),
+              for (final word in _previewWords) ...[
+                _DictionaryWordCard(word: word),
+                const SizedBox(height: CatchLingoSpacing.md),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -67,7 +83,19 @@ class _DictionaryEmptyState extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
+        border: Border.all(color: Colors.white),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(22),
         child: Column(
@@ -76,7 +104,11 @@ class _DictionaryEmptyState extends StatelessWidget {
               width: 76,
               height: 76,
               decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFFE9E8FF), Color(0xFFE4F7F1)],
+                ),
                 borderRadius: BorderRadius.circular(CatchLingoRadius.card),
               ),
               child: Icon(
@@ -112,6 +144,30 @@ class _DictionaryEmptyState extends StatelessWidget {
               label: const Text('Start Exploring'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShelfCountPill extends StatelessWidget {
+  const _ShelfCountPill({required this.count});
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+      ),
+      child: Text(
+        '$count preview',
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );
@@ -173,39 +229,69 @@ class _DictionaryWordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+        border: Border.all(color: Colors.white),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F202338),
+            blurRadius: 20,
+            offset: Offset(0, 12),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         child: Row(
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: 58,
+              height: 58,
               decoration: BoxDecoration(
-                color: word.color,
-                borderRadius: BorderRadius.circular(CatchLingoRadius.button),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [word.color, Colors.white],
+                ),
+                borderRadius: BorderRadius.circular(20),
               ),
-              child: const Icon(Icons.check_circle_rounded),
+              child: const Icon(
+                Icons.check_circle_rounded,
+                color: CatchLingoColors.successIcon,
+              ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: CatchLingoSpacing.lg),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     word.target,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w900,
+                      color: CatchLingoColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    word.source,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.visibility_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: CatchLingoSpacing.xs),
+                      Text(
+                        word.source,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: CatchLingoColors.textMuted,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: CatchLingoSpacing.sm),
                   Wrap(
                     spacing: 8,
                     children: [

@@ -86,8 +86,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
               word: _latestCollectedWord,
               duplicateMessage: _duplicateMessage,
             ),
-            const SizedBox(height: CatchLingoSpacing.lg),
-            _SceneHintCard(totalObjects: mockCatchWords.length),
           ],
         ),
       ),
@@ -111,26 +109,27 @@ class _SceneDiscoveryPanel extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      height: 420,
+      height: 430,
       padding: const EdgeInsets.all(CatchLingoSpacing.lg),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFFFFFF), Color(0xFFEFF3FF), Color(0xFFE8F8F3)],
+          colors: [Color(0xFFFFFFFF), Color(0xFFF1F5FF), Color(0xFFE7F8F5)],
         ),
         borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
-        border: Border.all(color: colorScheme.outlineVariant),
-        boxShadow: const [
+        border: Border.all(color: Colors.white.withValues(alpha: 0.92)),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 24,
-            offset: Offset(0, 14),
+            color: colorScheme.primary.withValues(alpha: 0.10),
+            blurRadius: 30,
+            offset: const Offset(0, 18),
           ),
         ],
       ),
       child: Stack(
         children: [
+          const Positioned.fill(child: _SceneTableSurface()),
           const Positioned(
             top: 0,
             left: 0,
@@ -143,7 +142,7 @@ class _SceneDiscoveryPanel extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'Objects are coming into focus',
+                  'Scanning scene',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
@@ -152,7 +151,7 @@ class _SceneDiscoveryPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: CatchLingoSpacing.xs),
                 Text(
-                  'Tap a marker to reveal what the app noticed',
+                  'Tap a marker',
                   textAlign: TextAlign.center,
                   style: Theme.of(
                     context,
@@ -161,8 +160,9 @@ class _SceneDiscoveryPanel extends StatelessWidget {
               ],
             ),
           ),
-          const Positioned.fill(child: _LensFrame()),
           const Positioned.fill(child: _SceneVignette()),
+          const Positioned.fill(child: _ScanSurface()),
+          const Positioned.fill(child: _LensFrame()),
           _PositionedObjectChip(
             alignment: const Alignment(-0.92, -0.10),
             word: words[0],
@@ -224,6 +224,65 @@ class _SceneBadge extends StatelessWidget {
   }
 }
 
+class _SceneTableSurface extends StatelessWidget {
+  const _SceneTableSurface();
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: CustomPaint(
+        painter: _SceneTableSurfacePainter(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+          accent: CatchLingoColors.tealAccent.withValues(alpha: 0.10),
+        ),
+      ),
+    );
+  }
+}
+
+class _SceneTableSurfacePainter extends CustomPainter {
+  const _SceneTableSurfacePainter({required this.color, required this.accent});
+
+  final Color color;
+  final Color accent;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final tableRect = Rect.fromCenter(
+      center: Offset(size.width * 0.52, size.height * 0.58),
+      width: size.width * 0.78,
+      height: size.height * 0.48,
+    );
+
+    final tablePaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Colors.white.withValues(alpha: 0.05), color, accent],
+      ).createShader(tableRect);
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(tableRect, const Radius.circular(42)),
+      tablePaint,
+    );
+
+    final rimPaint = Paint()
+      ..color = color.withValues(alpha: 0.75)
+      ..strokeWidth = 1.4
+      ..style = PaintingStyle.stroke;
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(tableRect.deflate(8), const Radius.circular(34)),
+      rimPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SceneTableSurfacePainter oldDelegate) {
+    return oldDelegate.color != color || oldDelegate.accent != accent;
+  }
+}
+
 class _LensFrame extends StatelessWidget {
   const _LensFrame();
 
@@ -259,6 +318,55 @@ class _SceneVignette extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ScanSurface extends StatelessWidget {
+  const _ScanSurface();
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.primary.withValues(alpha: 0.10);
+
+    return IgnorePointer(
+      child: CustomPaint(painter: _ScanSurfacePainter(color: color)),
+    );
+  }
+}
+
+class _ScanSurfacePainter extends CustomPainter {
+  const _ScanSurfacePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final linePaint = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+
+    for (var y = 82.0; y < size.height - 32; y += 54) {
+      canvas.drawLine(Offset(18, y), Offset(size.width - 18, y), linePaint);
+    }
+
+    final glowPaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          Colors.transparent,
+          color.withValues(alpha: 0.58),
+          Colors.transparent,
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, 1));
+
+    canvas.drawRect(
+      Rect.fromLTWH(22, size.height * 0.55, size.width - 44, 2),
+      glowPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ScanSurfacePainter oldDelegate) {
+    return oldDelegate.color != color;
   }
 }
 
@@ -402,7 +510,7 @@ class _LatestDiscoveryPanel extends StatelessWidget {
                     const SizedBox(width: CatchLingoSpacing.md),
                     Expanded(
                       child: Text(
-                        'Choose a marker in the scene to reveal its word.',
+                        'Tap a marker.',
                         style: Theme.of(
                           context,
                         ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
@@ -416,8 +524,15 @@ class _LatestDiscoveryPanel extends StatelessWidget {
               key: ValueKey('${word!.source}-$duplicateMessage'),
               padding: const EdgeInsets.all(CatchLingoSpacing.lg),
               decoration: BoxDecoration(
+                gradient: duplicateMessage == null
+                    ? const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFE8F8F0), Color(0xFFDDF5EC)],
+                      )
+                    : null,
                 color: duplicateMessage == null
-                    ? CatchLingoColors.successSurface
+                    ? null
                     : colorScheme.surfaceContainerHigh,
                 borderRadius: BorderRadius.circular(CatchLingoRadius.card),
                 border: Border.all(
@@ -425,6 +540,13 @@ class _LatestDiscoveryPanel extends StatelessWidget {
                       ? CatchLingoColors.successBorder
                       : colorScheme.outlineVariant,
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: CatchLingoColors.successIcon.withValues(alpha: 0.10),
+                    blurRadius: 18,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
@@ -442,7 +564,7 @@ class _LatestDiscoveryPanel extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          duplicateMessage ?? '${word!.source} found nearby',
+                          duplicateMessage ?? word!.source,
                           style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(
                                 color: duplicateMessage == null
@@ -454,7 +576,7 @@ class _LatestDiscoveryPanel extends StatelessWidget {
                         if (duplicateMessage == null) ...[
                           const SizedBox(height: CatchLingoSpacing.xs),
                           Text(
-                            '${word!.translation} caught',
+                            word!.translation,
                             style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
                                   color: CatchLingoColors.successText,
@@ -468,38 +590,6 @@ class _LatestDiscoveryPanel extends StatelessWidget {
                 ],
               ),
             ),
-    );
-  }
-}
-
-class _SceneHintCard extends StatelessWidget {
-  const _SceneHintCard({required this.totalObjects});
-
-  final int totalObjects;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(CatchLingoSpacing.lg),
-        child: Row(
-          children: [
-            Icon(
-              Icons.info_outline_rounded,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(width: CatchLingoSpacing.md),
-            Expanded(
-              child: Text(
-                '$totalObjects hidden objects in this scene can become words.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -26,7 +26,7 @@ class CatchWordChip extends StatelessWidget {
       duration: CatchLingoMotion.chip,
       curve: Curves.easeOutCubic,
       child: SizedBox(
-        width: 124,
+        width: isCollected ? 124 : 82,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -35,87 +35,121 @@ class CatchWordChip extends StatelessWidget {
             child: AnimatedContainer(
               duration: CatchLingoMotion.state,
               curve: Curves.easeOutCubic,
-              constraints: const BoxConstraints(minHeight: 54),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+              constraints: BoxConstraints(minHeight: isCollected ? 54 : 66),
+              padding: EdgeInsets.symmetric(
+                horizontal: isCollected ? 10 : 8,
+                vertical: isCollected ? 10 : 8,
+              ),
               decoration: BoxDecoration(
                 color: isCollected
                     ? CatchLingoColors.successSurface
-                    : Colors.white.withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+                    : Colors.white.withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(
+                  isCollected ? CatchLingoRadius.chip : 22,
+                ),
                 border: Border.all(
                   color: isCollected
                       ? CatchLingoColors.successBorder
-                      : colorScheme.primary.withValues(alpha: 0.24),
+                      : colorScheme.primary.withValues(alpha: 0.28),
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: isCollected
                         ? CatchLingoColors.successIcon.withValues(alpha: 0.20)
-                        : colorScheme.primary.withValues(alpha: 0.12),
-                    blurRadius: isCollected ? 16 : 12,
-                    offset: const Offset(0, 6),
+                        : colorScheme.primary.withValues(alpha: 0.10),
+                    blurRadius: isCollected ? 16 : 14,
+                    offset: const Offset(0, 7),
                   ),
                 ],
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  AnimatedSwitcher(
-                    duration: CatchLingoMotion.chip,
-                    child: Icon(
-                      isCollected ? Icons.check_circle_rounded : markerIcon,
-                      key: ValueKey(isCollected),
-                      size: 20,
-                      color: isCollected
-                          ? CatchLingoColors.successIcon
-                          : colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: CatchLingoSpacing.sm),
-                  Expanded(
-                    child: AnimatedSize(
-                      duration: CatchLingoMotion.state,
-                      curve: Curves.easeOutCubic,
-                      alignment: Alignment.centerLeft,
-                      child: Column(
-                        key: ValueKey(isCollected),
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            isCollected ? word.translation : 'Object',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: isCollected
-                                      ? CatchLingoColors.successText
-                                      : colorScheme.onSurface,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                          ),
-                          Text(
-                            isCollected ? word.source : 'tap to reveal',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                                  color: isCollected
-                                      ? const Color(0xFF31765A)
-                                      : Colors.black45,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                          ),
-                        ],
+              child: AnimatedSwitcher(
+                duration: CatchLingoMotion.state,
+                child: isCollected
+                    ? _CaughtContent(key: const ValueKey('caught'), word: word)
+                    : _HiddenMarkerContent(
+                        key: const ValueKey('hidden'),
+                        icon: markerIcon,
                       ),
-                    ),
-                  ),
-                ],
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _HiddenMarkerContent extends StatelessWidget {
+  const _HiddenMarkerContent({super.key, required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 22, color: colorScheme.primary),
+        const SizedBox(height: CatchLingoSpacing.xs),
+        Text(
+          'Object',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CaughtContent extends StatelessWidget {
+  const _CaughtContent({super.key, required this.word});
+
+  final CatchWord word;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(
+          Icons.check_circle_rounded,
+          size: 20,
+          color: CatchLingoColors.successIcon,
+        ),
+        const SizedBox(width: CatchLingoSpacing.sm),
+        Expanded(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                word.translation,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: CatchLingoColors.successText,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              Text(
+                word.source,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: const Color(0xFF31765A),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
