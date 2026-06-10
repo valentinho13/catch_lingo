@@ -36,133 +36,131 @@ class _HomeScreenState extends State<HomeScreen>
     return Scaffold(
       backgroundColor: CatchLingoColors.canvas,
       body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.all(CatchLingoSpacing.screen),
-            children: [
-              const SizedBox(height: CatchLingoSpacing.sm),
-              _HomeEntry(
-                animation: _controller,
-                begin: 0,
-                end: 0.32,
-                child: const _BrandLockup(),
-              ),
-              const SizedBox(height: CatchLingoSpacing.lg),
-              _HomeEntry(
-                animation: _controller,
-                begin: 0.08,
-                end: 0.48,
-                child: RichText(
-                  text: TextSpan(
-                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                      color: CatchLingoColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                      height: 0.98,
-                      letterSpacing: 0,
+        child: ListView(
+          padding: const EdgeInsets.all(CatchLingoSpacing.screen),
+          children: [
+            const SizedBox(height: CatchLingoSpacing.sm),
+            _HomeEntry(
+              animation: _controller,
+              begin: 0,
+              end: 0.32,
+              child: const _BrandLockup(),
+            ),
+            const SizedBox(height: CatchLingoSpacing.lg),
+            _HomeEntry(
+              animation: _controller,
+              begin: 0.08,
+              end: 0.48,
+              child: RichText(
+                text: TextSpan(
+                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                    color: CatchLingoColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    height: 0.98,
+                    letterSpacing: 0,
+                  ),
+                  children: const [
+                    TextSpan(text: 'Explore the world.\n'),
+                    TextSpan(
+                      text: 'Catch',
+                      style: TextStyle(color: CatchLingoColors.warmGreen),
                     ),
-                    children: const [
-                      TextSpan(text: 'Explore the world.\n'),
-                      TextSpan(
-                        text: 'Catch',
-                        style: TextStyle(color: CatchLingoColors.warmGreen),
-                      ),
-                      TextSpan(text: ' new words.'),
-                    ],
-                  ),
+                    TextSpan(text: ' new words.'),
+                  ],
                 ),
               ),
-              const SizedBox(height: CatchLingoSpacing.md),
-              _HomeEntry(
-                animation: _controller,
-                begin: 0.16,
-                end: 0.54,
-                child: Text(
-                  'Point. Discover. Learn.',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: CatchLingoColors.textMuted,
-                    fontWeight: FontWeight.w500,
-                    height: 1.35,
-                  ),
+            ),
+            const SizedBox(height: CatchLingoSpacing.md),
+            _HomeEntry(
+              animation: _controller,
+              begin: 0.16,
+              end: 0.54,
+              child: Text(
+                'Point. Discover. Learn.',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: CatchLingoColors.textMuted,
+                  fontWeight: FontWeight.w500,
+                  height: 1.35,
                 ),
               ),
-              const SizedBox(height: CatchLingoSpacing.xl),
-              _HomeEntry(
-                animation: _controller,
-                begin: 0.22,
-                end: 0.45,
-                child: const _HeroMark(),
-              ),
-              const SizedBox(height: CatchLingoSpacing.xl),
-              _HomeEntry(
-                animation: _controller,
-                begin: 0.30,
-                end: 0.78,
-                child: const _CollectionStatusCard(),
-              ),
-              const SizedBox(height: CatchLingoSpacing.xl),
-              _HomeEntry(
-                animation: _controller,
-                begin: 0.42,
-                end: 0.92,
-                child: FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: CatchLingoColors.warmGreen,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ExploreScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.travel_explore_rounded),
-                  label: const Text('Start Exploring'),
+            ),
+            const SizedBox(height: CatchLingoSpacing.xl),
+            _HomeEntry(
+              animation: _controller,
+              begin: 0.22,
+              end: 0.45,
+              child: const _HeroMark(),
+            ),
+            const SizedBox(height: CatchLingoSpacing.xl),
+            _HomeEntry(
+              animation: _controller,
+              begin: 0.30,
+              end: 0.78,
+              child: const _CollectionStatusCard(),
+            ),
+            const SizedBox(height: CatchLingoSpacing.xl),
+            _HomeEntry(
+              animation: _controller,
+              begin: 0.42,
+              end: 0.92,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                  backgroundColor: CatchLingoColors.warmGreen,
+                  foregroundColor: Colors.white,
                 ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ExploreScreen()),
+                  );
+                },
+                icon: const Icon(Icons.travel_explore_rounded),
+                label: const Text('Start Exploring'),
               ),
-              const SizedBox(height: CatchLingoSpacing.md),
-              _HomeEntry(
-                animation: _controller,
-                begin: 0.52,
-                end: 0.96,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: CatchLingoColors.textPrimary,
-                    side: BorderSide(
-                      color: CatchLingoColors.textPrimary.withValues(alpha: 0.22),
-                    ),
+            ),
+            const SizedBox(height: CatchLingoSpacing.md),
+            _HomeEntry(
+              animation: _controller,
+              begin: 0.52,
+              end: 0.96,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: CatchLingoColors.textPrimary,
+                  side: BorderSide(
+                    color: CatchLingoColors.textPrimary.withValues(alpha: 0.22),
                   ),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const DictionaryScreen(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.menu_book_rounded),
-                  label: const Text('My Dictionary'),
                 ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const DictionaryScreen()),
+                  );
+                },
+                icon: const Icon(Icons.menu_book_rounded),
+                label: const Text('My Dictionary'),
               ),
-              const SizedBox(height: CatchLingoSpacing.md),
-              _HomeEntry(
-                animation: _controller,
-                begin: 0.62,
-                end: 1,
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: CatchLingoColors.textPrimary,
-                    side: BorderSide(
-                      color: CatchLingoColors.textPrimary.withValues(alpha: 0.22),
-                    ),
+            ),
+            const SizedBox(height: CatchLingoSpacing.md),
+            _HomeEntry(
+              animation: _controller,
+              begin: 0.62,
+              end: 1,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: CatchLingoColors.textPrimary,
+                  side: BorderSide(
+                    color: CatchLingoColors.textPrimary.withValues(alpha: 0.22),
                   ),
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ReviewScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.style_rounded),
-                  label: const Text('Review'),
                 ),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ReviewScreen()),
+                  );
+                },
+                icon: const Icon(Icons.style_rounded),
+                label: const Text('Review'),
               ),
-            ],
-          ),
+            ),
+          ],
+        ),
       ),
     );
   }

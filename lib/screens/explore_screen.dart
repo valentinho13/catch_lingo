@@ -455,7 +455,6 @@ class _FullscreenDiscoveryLayer extends StatelessWidget {
   }
 }
 
-
 class _CameraScenePreview extends StatelessWidget {
   const _CameraScenePreview({
     required this.controller,
@@ -597,7 +596,6 @@ class _SceneTableSurfacePainter extends CustomPainter {
   }
 }
 
-
 class _DetectionMarker extends StatelessWidget {
   const _DetectionMarker({
     required this.word,
@@ -703,7 +701,10 @@ class _DetectionBottomPanel extends StatelessWidget {
 
     if (caught != null) {
       key = 'reveal-${caught.id}-$justCaughtIsDuplicate';
-      child = _CatchRevealCard(word: caught, isDuplicate: justCaughtIsDuplicate);
+      child = _CatchRevealCard(
+        word: caught,
+        isDuplicate: justCaughtIsDuplicate,
+      );
     } else if (word == null) {
       key = 'scan-$isScanning';
       child = _ScanningStatus(isEmpty: !isScanning);
@@ -895,10 +896,7 @@ class _ScanningStatus extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.auto_awesome_rounded,
-              color: CatchLingoColors.amber,
-            ),
+            Icon(Icons.auto_awesome_rounded, color: CatchLingoColors.amber),
             const SizedBox(width: CatchLingoSpacing.md),
             Flexible(
               child: Column(

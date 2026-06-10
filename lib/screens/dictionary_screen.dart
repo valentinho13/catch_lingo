@@ -41,29 +41,14 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: CatchLingoColors.canvas,
-      appBar: AppBar(
-        title: const Text('My Dictionary'),
-      ),
+      appBar: AppBar(title: const Text('My Dictionary')),
       body: SafeArea(
-          child: FutureBuilder<List<CatchWord>>(
-            future: _wordsFuture,
-            builder: (context, snapshot) {
-              final words = snapshot.data ?? [];
+        child: FutureBuilder<List<CatchWord>>(
+          future: _wordsFuture,
+          builder: (context, snapshot) {
+            final words = snapshot.data ?? [];
 
-              if (words.isEmpty) {
-                return ListView(
-                  padding: const EdgeInsets.fromLTRB(
-                    CatchLingoSpacing.screen,
-                    CatchLingoSpacing.sm,
-                    CatchLingoSpacing.screen,
-                    CatchLingoSpacing.screen,
-                  ),
-                  children: [_DictionaryEmptyState(onExplore: _openExplore)],
-                );
-              }
-
-              final groupedWords = _groupWordsByCategory(words);
-
+            if (words.isEmpty) {
               return ListView(
                 padding: const EdgeInsets.fromLTRB(
                   CatchLingoSpacing.screen,
@@ -71,52 +56,65 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
                   CatchLingoSpacing.screen,
                   CatchLingoSpacing.screen,
                 ),
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Collection',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                color: CatchLingoColors.textPrimary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                      ),
-                      _ShelfCountPill(count: words.length),
-                    ],
-                  ),
-                  const SizedBox(height: CatchLingoSpacing.xs),
-                  Text(
-                    'Words caught from real scenes.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: CatchLingoColors.textMuted,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: CatchLingoSpacing.lg),
-                  _CollectionStats(
-                    words: words,
-                    categoryCount: groupedWords.length,
-                  ),
-                  const SizedBox(height: CatchLingoSpacing.xl),
-                  for (final entry in groupedWords.entries) ...[
-                    _CategorySectionHeader(
-                      label: entry.key,
-                      count: entry.value.length,
-                    ),
-                    const SizedBox(height: CatchLingoSpacing.sm),
-                    for (final word in entry.value) ...[
-                      _DictionaryWordCard(word: word),
-                      const SizedBox(height: CatchLingoSpacing.md),
-                    ],
-                    const SizedBox(height: CatchLingoSpacing.sm),
-                  ],
-                ],
+                children: [_DictionaryEmptyState(onExplore: _openExplore)],
               );
-            },
-          ),
+            }
+
+            final groupedWords = _groupWordsByCategory(words);
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(
+                CatchLingoSpacing.screen,
+                CatchLingoSpacing.sm,
+                CatchLingoSpacing.screen,
+                CatchLingoSpacing.screen,
+              ),
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Collection',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: CatchLingoColors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ),
+                    _ShelfCountPill(count: words.length),
+                  ],
+                ),
+                const SizedBox(height: CatchLingoSpacing.xs),
+                Text(
+                  'Words caught from real scenes.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: CatchLingoColors.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: CatchLingoSpacing.lg),
+                _CollectionStats(
+                  words: words,
+                  categoryCount: groupedWords.length,
+                ),
+                const SizedBox(height: CatchLingoSpacing.xl),
+                for (final entry in groupedWords.entries) ...[
+                  _CategorySectionHeader(
+                    label: entry.key,
+                    count: entry.value.length,
+                  ),
+                  const SizedBox(height: CatchLingoSpacing.sm),
+                  for (final word in entry.value) ...[
+                    _DictionaryWordCard(word: word),
+                    const SizedBox(height: CatchLingoSpacing.md),
+                  ],
+                  const SizedBox(height: CatchLingoSpacing.sm),
+                ],
+              ],
+            );
+          },
+        ),
       ),
     );
   }

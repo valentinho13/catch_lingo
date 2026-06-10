@@ -1,4 +1,5 @@
 import 'package:catch_lingo/app/catch_lingo_app.dart';
+import 'package:catch_lingo/data/mock_catch_words.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -31,15 +32,20 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1200));
 
-    expect(find.text('Explore Mode'), findsOneWidget);
-    expect(find.text('Live scene'), findsOneWidget);
-    expect(find.text('New discovery'), findsOneWidget);
-    expect(find.text('Catch word'), findsOneWidget);
+    expect(find.text('Explore'), findsOneWidget);
+    expect(find.text('Something here'), findsOneWidget);
+    expect(find.text('Catch it to discover the word'), findsOneWidget);
+    expect(find.text('Catch'), findsOneWidget);
 
-    await tester.tap(find.text('Catch word'));
+    await tester.tap(find.text('Catch'));
     await tester.pump();
 
     expect(find.text('1 caught'), findsOneWidget);
+    expect(find.text('Found it'), findsOneWidget);
+    expect(
+      mockCatchWords.any((word) => tester.any(find.text(word.translation))),
+      isTrue,
+    );
   });
 
   testWidgets('reviews saved caught words one card at a time', (tester) async {
