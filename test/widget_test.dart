@@ -14,12 +14,11 @@ void main() {
       find.textContaining('Explore the world.', findRichText: true),
       findsOneWidget,
     );
-    expect(find.text('Point. Discover. Learn.'), findsOneWidget);
+    expect(find.textContaining('Point. Discover. Learn.'), findsOneWidget);
 
-    await tester.scrollUntilVisible(find.text('My Dictionary'), 160);
-
-    expect(find.text('My Dictionary'), findsOneWidget);
-    expect(find.text('No words collected yet.'), findsOneWidget);
+    expect(find.text('Your statistics'), findsOneWidget);
+    expect(find.text('Your categories'), findsOneWidget);
+    expect(find.text('Dictionary'), findsOneWidget);
   });
 
   testWidgets('catches an automatic mock discovery', (tester) async {
@@ -57,21 +56,20 @@ void main() {
 
     await tester.pumpWidget(const CatchLingoApp());
 
-    await tester.scrollUntilVisible(find.text('Review'), 160);
     await tester.tap(find.text('Review'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Review'), findsOneWidget);
+    expect(find.text('Remember'), findsOneWidget);
     expect(find.text('kursi'), findsOneWidget);
     expect(find.text('English hidden'), findsOneWidget);
     expect(find.text('chair'), findsNothing);
 
-    await tester.tap(find.text('Show answer'));
+    await tester.tap(find.byTooltip('Show answer'));
     await tester.pumpAndSettle();
 
     expect(find.text('chair'), findsOneWidget);
 
-    await tester.tap(find.text('Knew it'));
+    await tester.tap(find.byTooltip('Knew it'));
     await tester.pumpAndSettle();
 
     expect(find.text('kopi'), findsOneWidget);

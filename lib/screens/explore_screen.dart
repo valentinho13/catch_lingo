@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +10,7 @@ import '../data/caught_word_storage.dart';
 import '../data/detection_service.dart';
 import '../data/mock_catch_words.dart';
 import '../models/catch_word.dart';
+import '../widgets/word_visuals.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -167,7 +169,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         _isScanning = false;
       });
 
-      _detectionTimer = Timer(const Duration(milliseconds: 1600), _afterReveal);
+      _detectionTimer = Timer(const Duration(milliseconds: 2100), _afterReveal);
 
       return;
     }
@@ -191,11 +193,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
     if (_sessionCaught.length >= _sessionGoal) {
       _detectionTimer = Timer(
-        const Duration(milliseconds: 1700),
+        const Duration(milliseconds: 2200),
         _completeSession,
       );
     } else {
-      _detectionTimer = Timer(const Duration(milliseconds: 1600), _afterReveal);
+      _detectionTimer = Timer(const Duration(milliseconds: 2100), _afterReveal);
     }
   }
 
@@ -296,6 +298,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
               },
             ),
           ),
+          if (_justCaught != null && !_sessionComplete)
+            Positioned.fill(
+              child: _CatchCelebrationOverlay(
+                word: _justCaught!,
+                isDuplicate: _justCaughtIsDuplicate,
+                totalCaught: _collectedWords.length,
+              ),
+            ),
           if (_sessionComplete)
             Positioned.fill(
               child: _SessionCompleteOverlay(
@@ -348,27 +358,98 @@ class _ExploreTopBar extends StatelessWidget {
   }
 }
 
-class _TinyCollectionPill extends StatelessWidget {
+class _TinyCollectionPill extends StatefulWidget {
   const _TinyCollectionPill({required this.count});
 
   final int count;
 
   @override
+  State<_TinyCollectionPill> createState() => _TinyCollectionPillState();
+}
+
+class _TinyCollectionPillState extends State<_TinyCollectionPill>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 360),
+    );
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1,
+          end: 1.12,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 42,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.12,
+          end: 1,
+        ).chain(CurveTween(curve: Curves.easeOutBack)),
+        weight: 58,
+      ),
+    ]).animate(_controller);
+  }
+
+  @override
+  void didUpdateWidget(covariant _TinyCollectionPill oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.count > oldWidget.count) {
+      _controller.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: CatchLingoMotion.state,
-      child: Container(
-        key: ValueKey(count),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.88),
-          borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
-        ),
-        child: Text(
-          '$count caught',
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: CatchLingoColors.warmGreen,
-            fontWeight: FontWeight.w700,
+    return ScaleTransition(
+      scale: _scale,
+      child: AnimatedSwitcher(
+        duration: CatchLingoMotion.state,
+        transitionBuilder: (child, animation) {
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.24),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        child: Container(
+          key: ValueKey(widget.count),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.88),
+            borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+            boxShadow: [
+              BoxShadow(
+                color: CatchLingoColors.warmGreen.withValues(alpha: 0.14),
+                blurRadius: 14,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: Text(
+            '${widget.count} caught',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: CatchLingoColors.warmGreen,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ),
@@ -632,7 +713,7 @@ class _DetectionMarker extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              _markerIconFor(word),
+              catchWordIcon(word),
               size: 20,
               color: CatchLingoColors.warmGreen,
             ),
@@ -661,16 +742,6 @@ class _DetectionMarker extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  IconData _markerIconFor(CatchWord word) {
-    return switch (word.source) {
-      'coffee' => Icons.local_cafe_rounded,
-      'cup' => Icons.local_drink_rounded,
-      'table' => Icons.table_restaurant_rounded,
-      'chair' => Icons.chair_rounded,
-      _ => Icons.center_focus_strong_rounded,
-    };
   }
 }
 
@@ -701,10 +772,7 @@ class _DetectionBottomPanel extends StatelessWidget {
 
     if (caught != null) {
       key = 'reveal-${caught.id}-$justCaughtIsDuplicate';
-      child = _CatchRevealCard(
-        word: caught,
-        isDuplicate: justCaughtIsDuplicate,
-      );
+      child = const SizedBox.shrink();
     } else if (word == null) {
       key = 'scan-$isScanning';
       child = _ScanningStatus(isEmpty: !isScanning);
@@ -934,6 +1002,462 @@ class _ScanningStatus extends StatelessWidget {
   }
 }
 
+class _CatchCelebrationOverlay extends StatelessWidget {
+  const _CatchCelebrationOverlay({
+    required this.word,
+    required this.isDuplicate,
+    required this.totalCaught,
+  });
+
+  final CatchWord word;
+  final bool isDuplicate;
+  final int totalCaught;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 620),
+        curve: Curves.easeOutCubic,
+        builder: (context, t, child) {
+          final clamped = t.clamp(0.0, 1.0);
+
+          return Opacity(
+            opacity: clamped,
+            child: Transform.translate(
+              offset: Offset(0, 18 * (1 - clamped)),
+              child: Transform.scale(
+                scale: 0.88 + 0.12 * Curves.easeOutBack.transform(clamped),
+                child: child,
+              ),
+            ),
+          );
+        },
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.16),
+              ),
+            ),
+            const _CelebrationSparkles(),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 330),
+                child: Padding(
+                  padding: const EdgeInsets.all(CatchLingoSpacing.xl),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _GentleMotion(
+                        scaleAmount: 0.045,
+                        yAmount: 3,
+                        duration: const Duration(milliseconds: 980),
+                        child: Container(
+                          width: 76,
+                          height: 76,
+                          decoration: BoxDecoration(
+                            color: CatchLingoColors.successSurface,
+                            borderRadius: BorderRadius.circular(999),
+                            boxShadow: [
+                              BoxShadow(
+                                color: CatchLingoColors.warmGreen.withValues(
+                                  alpha: 0.28,
+                                ),
+                                blurRadius: 30,
+                                offset: const Offset(0, 12),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isDuplicate
+                                ? Icons.visibility_rounded
+                                : Icons.check_rounded,
+                            color: CatchLingoColors.warmGreen,
+                            size: 38,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: CatchLingoSpacing.md),
+                      Text(
+                        isDuplicate ? 'Spotted again' : 'Found it',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      const SizedBox(height: CatchLingoSpacing.md),
+                      _GentleMotion(
+                        scaleAmount: 0.012,
+                        yAmount: 4,
+                        duration: const Duration(milliseconds: 1400),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: CatchLingoSpacing.xl,
+                            vertical: CatchLingoSpacing.xxl,
+                          ),
+                          decoration: BoxDecoration(
+                            color: CatchLingoColors.warmSurface,
+                            borderRadius: BorderRadius.circular(
+                              CatchLingoRadius.panel,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.24),
+                                blurRadius: 34,
+                                offset: const Offset(0, 18),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                word.translation,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.displayMedium
+                                    ?.copyWith(
+                                      color: CatchLingoColors.warmGreen,
+                                      fontWeight: FontWeight.w800,
+                                      height: 1,
+                                    ),
+                              ),
+                              const SizedBox(height: CatchLingoSpacing.sm),
+                              Text(
+                                word.source,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.titleMedium
+                                    ?.copyWith(
+                                      color: CatchLingoColors.textPrimary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                              const SizedBox(height: CatchLingoSpacing.lg),
+                              Container(
+                                width: 64,
+                                height: 64,
+                                decoration: BoxDecoration(
+                                  color: CatchLingoColors.amber.withValues(
+                                    alpha: 0.12,
+                                  ),
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                child: Icon(
+                                  catchWordIcon(word),
+                                  color: CatchLingoColors.textPrimary,
+                                  size: 32,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: CatchLingoSpacing.lg),
+                      if (!isDuplicate)
+                        _RewardToken(totalCaught: totalCaught)
+                      else
+                        _RevisitToken(seenCount: word.seenCount),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GentleMotion extends StatefulWidget {
+  const _GentleMotion({
+    required this.child,
+    this.scaleAmount = 0.02,
+    this.yAmount = 4,
+    this.duration = const Duration(milliseconds: 1200),
+  });
+
+  final Widget child;
+  final double scaleAmount;
+  final double yAmount;
+  final Duration duration;
+
+  @override
+  State<_GentleMotion> createState() => _GentleMotionState();
+}
+
+class _GentleMotionState extends State<_GentleMotion>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      child: widget.child,
+      builder: (context, child) {
+        final phase = math.sin(_controller.value * math.pi * 2);
+        final scale = 1 + phase * widget.scaleAmount;
+        final y = phase * widget.yAmount;
+
+        return Transform.translate(
+          offset: Offset(0, y),
+          child: Transform.scale(scale: scale, child: child),
+        );
+      },
+    );
+  }
+}
+
+class _RewardToken extends StatelessWidget {
+  const _RewardToken({required this.totalCaught});
+
+  final int totalCaught;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _GentleMotion(
+          scaleAmount: 0.055,
+          yAmount: 2,
+          duration: const Duration(milliseconds: 820),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFC75F),
+              borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+              boxShadow: [
+                BoxShadow(
+                  color: CatchLingoColors.amber.withValues(alpha: 0.28),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: Text(
+              '+1',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: CatchLingoColors.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: CatchLingoSpacing.sm),
+        Text(
+          '$totalCaught caught total',
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RevisitToken extends StatelessWidget {
+  const _RevisitToken({required this.seenCount});
+
+  final int seenCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+      ),
+      child: Text(
+        'Seen $seenCount times',
+        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+          color: CatchLingoColors.warmGreen,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+class _CelebrationSparkles extends StatefulWidget {
+  const _CelebrationSparkles();
+
+  @override
+  State<_CelebrationSparkles> createState() => _CelebrationSparklesState();
+}
+
+class _CelebrationSparklesState extends State<_CelebrationSparkles>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1450),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return CustomPaint(
+          painter: _CelebrationSparklePainter(progress: _controller.value),
+          child: const SizedBox.expand(),
+        );
+      },
+    );
+  }
+}
+
+class _CelebrationSparklePainter extends CustomPainter {
+  const _CelebrationSparklePainter({required this.progress});
+
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final particles = <({Offset origin, double size, double drift})>[
+      (
+        origin: Offset(size.width * 0.18, size.height * 0.24),
+        size: 4.6,
+        drift: 18,
+      ),
+      (
+        origin: Offset(size.width * 0.78, size.height * 0.20),
+        size: 5.2,
+        drift: 24,
+      ),
+      (
+        origin: Offset(size.width * 0.14, size.height * 0.58),
+        size: 3.8,
+        drift: 22,
+      ),
+      (
+        origin: Offset(size.width * 0.83, size.height * 0.55),
+        size: 4.4,
+        drift: 20,
+      ),
+      (
+        origin: Offset(size.width * 0.32, size.height * 0.72),
+        size: 4.0,
+        drift: 18,
+      ),
+      (
+        origin: Offset(size.width * 0.67, size.height * 0.76),
+        size: 4.8,
+        drift: 22,
+      ),
+      (
+        origin: Offset(size.width * 0.48, size.height * 0.18),
+        size: 2.8,
+        drift: 26,
+      ),
+      (
+        origin: Offset(size.width * 0.90, size.height * 0.35),
+        size: 3.4,
+        drift: 18,
+      ),
+      (
+        origin: Offset(size.width * 0.08, size.height * 0.38),
+        size: 3.0,
+        drift: 16,
+      ),
+      (
+        origin: Offset(size.width * 0.74, size.height * 0.66),
+        size: 3.2,
+        drift: 20,
+      ),
+    ];
+
+    for (var i = 0; i < particles.length; i++) {
+      final particle = particles[i];
+      final phase = progress * math.pi * 2 + i * 0.72;
+      final orbit = Offset(
+        math.cos(phase) * particle.drift,
+        math.sin(phase * 1.18) * particle.drift * 0.56,
+      );
+      final float = Offset(0, -10 * progress);
+      final center = particle.origin + orbit + float;
+      final pulse = (math.sin(phase * 1.7) + 1) / 2;
+      final radius = particle.size + pulse * 3.2;
+      final alpha = 0.34 + pulse * 0.44;
+      final color = i.isEven
+          ? CatchLingoColors.amber
+          : CatchLingoColors.successIcon;
+      final glowPaint = Paint()..color = color.withValues(alpha: alpha * 0.16);
+      final dotPaint = Paint()..color = color.withValues(alpha: alpha);
+
+      canvas.drawCircle(center, radius * 3.2, glowPaint);
+      canvas.drawCircle(center, radius, dotPaint);
+      _drawSpark(canvas, center, radius * 2.1, color.withValues(alpha: alpha));
+    }
+  }
+
+  void _drawSpark(Canvas canvas, Offset center, double length, Color color) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1.4
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawLine(
+      center.translate(-length, 0),
+      center.translate(length, 0),
+      paint,
+    );
+    canvas.drawLine(
+      center.translate(0, -length),
+      center.translate(0, length),
+      paint,
+    );
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
+    canvas.rotate(math.pi / 4);
+    canvas.drawLine(Offset(-length * 0.55, 0), Offset(length * 0.55, 0), paint);
+    canvas.drawLine(Offset(0, -length * 0.55), Offset(0, length * 0.55), paint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _CelebrationSparklePainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
+}
+
+// ignore: unused_element
 class _CatchRevealCard extends StatelessWidget {
   const _CatchRevealCard({required this.word, required this.isDuplicate});
 

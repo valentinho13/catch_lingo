@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../app/app_theme.dart';
+import '../data/caught_word_storage.dart';
+import '../models/catch_word.dart';
+import '../widgets/catch_lingo_bottom_nav.dart';
+import '../widgets/word_visuals.dart';
 import 'dictionary_screen.dart';
 import 'explore_screen.dart';
 import 'review_screen.dart';
@@ -14,7 +18,10 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
+  static const _storage = CaughtWordStorage();
+
   late final AnimationController _controller;
+  late Future<List<CatchWord>> _wordsFuture;
 
   @override
   void initState() {
@@ -23,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen>
       vsync: this,
       duration: CatchLingoMotion.homeIntro,
     )..forward();
+    _wordsFuture = _storage.loadWords();
   }
 
   @override
@@ -35,128 +43,56 @@ class _HomeScreenState extends State<HomeScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: CatchLingoColors.canvas,
+      bottomNavigationBar: CatchLingoBottomNav(
+        selectedTab: CatchLingoTab.discover,
+        onSelected: _openTab,
+      ),
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(CatchLingoSpacing.screen),
           children: [
-            const SizedBox(height: CatchLingoSpacing.sm),
             _HomeEntry(
               animation: _controller,
               begin: 0,
               end: 0.32,
-              child: const _BrandLockup(),
+              child: _MorningHeader(onSettings: _showSettingsSheet),
             ),
             const SizedBox(height: CatchLingoSpacing.lg),
             _HomeEntry(
               animation: _controller,
               begin: 0.08,
               end: 0.48,
-              child: RichText(
-                text: TextSpan(
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    color: CatchLingoColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                    height: 0.98,
-                    letterSpacing: 0,
-                  ),
-                  children: const [
-                    TextSpan(text: 'Explore the world.\n'),
-                    TextSpan(
-                      text: 'Catch',
-                      style: TextStyle(color: CatchLingoColors.warmGreen),
-                    ),
-                    TextSpan(text: ' new words.'),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: CatchLingoSpacing.md),
-            _HomeEntry(
-              animation: _controller,
-              begin: 0.16,
-              end: 0.54,
-              child: Text(
-                'Point. Discover. Learn.',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: CatchLingoColors.textMuted,
-                  fontWeight: FontWeight.w500,
-                  height: 1.35,
-                ),
-              ),
-            ),
-            const SizedBox(height: CatchLingoSpacing.xl),
-            _HomeEntry(
-              animation: _controller,
-              begin: 0.22,
-              end: 0.45,
-              child: const _HeroMark(),
-            ),
-            const SizedBox(height: CatchLingoSpacing.xl),
-            _HomeEntry(
-              animation: _controller,
-              begin: 0.30,
-              end: 0.78,
-              child: const _CollectionStatusCard(),
+              child: _TodayCatchCard(onExplore: _openExplore),
             ),
             const SizedBox(height: CatchLingoSpacing.xl),
             _HomeEntry(
               animation: _controller,
               begin: 0.42,
               end: 0.92,
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: CatchLingoColors.warmGreen,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ExploreScreen()),
-                  );
+              child: FutureBuilder<List<CatchWord>>(
+                future: _wordsFuture,
+                builder: (context, snapshot) {
+                  final words = snapshot.data ?? [];
+
+                  return _HomeStats(words: words);
                 },
-                icon: const Icon(Icons.travel_explore_rounded),
-                label: const Text('Start Exploring'),
               ),
             ),
-            const SizedBox(height: CatchLingoSpacing.md),
+            const SizedBox(height: CatchLingoSpacing.xl),
             _HomeEntry(
               animation: _controller,
               begin: 0.52,
               end: 0.96,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: CatchLingoColors.textPrimary,
-                  side: BorderSide(
-                    color: CatchLingoColors.textPrimary.withValues(alpha: 0.22),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const DictionaryScreen()),
+              child: FutureBuilder<List<CatchWord>>(
+                future: _wordsFuture,
+                builder: (context, snapshot) {
+                  final words = snapshot.data ?? [];
+
+                  return _HomeCategories(
+                    words: words,
+                    onDictionary: _openDictionary,
                   );
                 },
-                icon: const Icon(Icons.menu_book_rounded),
-                label: const Text('My Dictionary'),
-              ),
-            ),
-            const SizedBox(height: CatchLingoSpacing.md),
-            _HomeEntry(
-              animation: _controller,
-              begin: 0.62,
-              end: 1,
-              child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: CatchLingoColors.textPrimary,
-                  side: BorderSide(
-                    color: CatchLingoColors.textPrimary.withValues(alpha: 0.22),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const ReviewScreen()),
-                  );
-                },
-                icon: const Icon(Icons.style_rounded),
-                label: const Text('Review'),
               ),
             ),
           ],
@@ -164,48 +100,553 @@ class _HomeScreenState extends State<HomeScreen>
       ),
     );
   }
+
+  Future<void> _openExplore() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ExploreScreen()));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _wordsFuture = _storage.loadWords();
+    });
+  }
+
+  void _openDictionary() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const DictionaryScreen()));
+  }
+
+  void _showSettingsSheet() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: CatchLingoColors.warmSurface,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(CatchLingoRadius.panel),
+        ),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              CatchLingoSpacing.screen,
+              CatchLingoSpacing.sm,
+              CatchLingoSpacing.screen,
+              CatchLingoSpacing.screen,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: CatchLingoColors.warmGreen.withValues(
+                          alpha: 0.10,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.settings_rounded,
+                        color: CatchLingoColors.warmGreen,
+                      ),
+                    ),
+                    const SizedBox(width: CatchLingoSpacing.md),
+                    Expanded(
+                      child: Text(
+                        'Settings',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: CatchLingoColors.textPrimary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      icon: const Icon(Icons.close_rounded),
+                      tooltip: 'Close',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: CatchLingoSpacing.lg),
+                Text(
+                  'CatchLingo is focused on real-world word discovery. Language, camera, and reminder preferences will live here as the app grows.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: CatchLingoColors.textMuted,
+                    fontWeight: FontWeight.w500,
+                    height: 1.35,
+                  ),
+                ),
+                const SizedBox(height: CatchLingoSpacing.xl),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: CatchLingoColors.warmGreen,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Done'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _openTab(CatchLingoTab tab) {
+    switch (tab) {
+      case CatchLingoTab.discover:
+        break;
+      case CatchLingoTab.dictionary:
+        _openDictionary();
+        break;
+      case CatchLingoTab.review:
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const ReviewScreen()));
+        break;
+    }
+  }
 }
 
-class _BrandLockup extends StatelessWidget {
-  const _BrandLockup();
+class _MorningHeader extends StatelessWidget {
+  const _MorningHeader({required this.onSettings});
+
+  final VoidCallback onSettings;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         Container(
-          width: 38,
-          height: 38,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            color: CatchLingoColors.warmGreen,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: CatchLingoColors.warmGreen.withValues(alpha: 0.20),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            color: CatchLingoColors.amber.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(16),
           ),
-          child: const Center(
-            child: Text(
-              'C',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          child: const Icon(
+            Icons.wb_sunny_rounded,
+            color: CatchLingoColors.amber,
           ),
         ),
         const SizedBox(width: CatchLingoSpacing.md),
-        Text(
-          'CatchLingo',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: CatchLingoColors.textPrimary,
-            fontWeight: FontWeight.w700,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Good morning',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: CatchLingoColors.textMuted,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Text(
+                'CatchLingo',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: CatchLingoColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
         ),
+        IconButton.filledTonal(
+          onPressed: onSettings,
+          style: IconButton.styleFrom(
+            backgroundColor: CatchLingoColors.warmSurface,
+            foregroundColor: CatchLingoColors.textPrimary,
+          ),
+          icon: const Icon(Icons.settings_rounded),
+        ),
       ],
+    );
+  }
+}
+
+class _TodayCatchCard extends StatelessWidget {
+  const _TodayCatchCard({required this.onExplore});
+
+  final VoidCallback onExplore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 210),
+      padding: const EdgeInsets.all(CatchLingoSpacing.lg),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            CatchLingoColors.warmGreen.withValues(alpha: 0.14),
+            CatchLingoColors.amber.withValues(alpha: 0.10),
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -8,
+            bottom: -14,
+            child: SizedBox(
+              width: 152,
+              height: 152,
+              child: Image.asset(
+                'assets/images/welcome_cat.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Catch words from the world around you.',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: CatchLingoColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                  height: 1.18,
+                ),
+              ),
+              const SizedBox(height: CatchLingoSpacing.sm),
+              Text(
+                'Explore the world. Point. Discover. Learn.',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: CatchLingoColors.textMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: CatchLingoSpacing.lg),
+              SizedBox(
+                width: 138,
+                child: _StartExploringButton(onPressed: onExplore),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StartExploringButton extends StatefulWidget {
+  const _StartExploringButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  State<_StartExploringButton> createState() => _StartExploringButtonState();
+}
+
+class _StartExploringButtonState extends State<_StartExploringButton> {
+  var _isPressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _isPressed ? 0.95 : 1,
+      duration: CatchLingoMotion.tap,
+      curve: Curves.easeOutCubic,
+      child: Listener(
+        onPointerDown: (_) => setState(() => _isPressed = true),
+        onPointerCancel: (_) => setState(() => _isPressed = false),
+        onPointerUp: (_) => setState(() => _isPressed = false),
+        child: AnimatedContainer(
+          duration: CatchLingoMotion.state,
+          curve: Curves.easeOutCubic,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(CatchLingoRadius.button),
+            boxShadow: [
+              BoxShadow(
+                color: CatchLingoColors.textPrimary.withValues(
+                  alpha: _isPressed ? 0.10 : 0.18,
+                ),
+                blurRadius: _isPressed ? 10 : 18,
+                offset: Offset(0, _isPressed ? 4 : 8),
+              ),
+            ],
+          ),
+          child: FilledButton.icon(
+            onPressed: widget.onPressed,
+            style: FilledButton.styleFrom(
+              backgroundColor: CatchLingoColors.textPrimary,
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.arrow_forward_rounded),
+            label: const Text('Start Exploring'),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeStats extends StatelessWidget {
+  const _HomeStats({required this.words});
+
+  final List<CatchWord> words;
+
+  @override
+  Widget build(BuildContext context) {
+    final sightings = words.fold<int>(
+      0,
+      (total, word) => total + (word.seenCount <= 0 ? 1 : word.seenCount),
+    );
+    final categories = words
+        .map((word) => word.category.trim().isEmpty ? 'Other' : word.category)
+        .toSet()
+        .length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _HomeSectionTitle(title: 'Your statistics'),
+        const SizedBox(height: CatchLingoSpacing.md),
+        Row(
+          children: [
+            Expanded(
+              child: _StatCard(
+                value: words.length.toString(),
+                label: 'words caught',
+                icon: Icons.cruelty_free_rounded,
+                color: CatchLingoColors.warmGreen,
+              ),
+            ),
+            const SizedBox(width: CatchLingoSpacing.sm),
+            Expanded(
+              child: _StatCard(
+                value: sightings.toString(),
+                label: 'sightings',
+                icon: Icons.local_fire_department_rounded,
+                color: CatchLingoColors.amber,
+              ),
+            ),
+            const SizedBox(width: CatchLingoSpacing.sm),
+            Expanded(
+              child: _StatCard(
+                value: categories.toString(),
+                label: 'categories',
+                icon: Icons.star_rounded,
+                color: const Color(0xFFE0A51B),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 126,
+      padding: const EdgeInsets.all(CatchLingoSpacing.md),
+      decoration: BoxDecoration(
+        color: CatchLingoColors.warmSurface,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            value,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: CatchLingoColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: CatchLingoColors.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: CatchLingoSpacing.sm),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeCategories extends StatelessWidget {
+  const _HomeCategories({required this.words, required this.onDictionary});
+
+  final List<CatchWord> words;
+  final VoidCallback onDictionary;
+
+  @override
+  Widget build(BuildContext context) {
+    final counts = <String, int>{};
+
+    for (final word in words) {
+      final category = word.category.trim().isEmpty ? 'Other' : word.category;
+      counts[category] = (counts[category] ?? 0) + 1;
+    }
+
+    final entries = counts.entries.take(3).toList();
+    final visibleEntries = entries.isEmpty
+        ? [
+            const MapEntry('Cafe', 0),
+            const MapEntry('Kitchen', 0),
+            const MapEntry('Travel', 0),
+          ]
+        : entries;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _HomeSectionTitle(title: 'Your categories', action: onDictionary),
+        const SizedBox(height: CatchLingoSpacing.md),
+        Row(
+          children: [
+            for (var index = 0; index < visibleEntries.length; index++) ...[
+              if (index > 0) const SizedBox(width: CatchLingoSpacing.sm),
+              Expanded(
+                child: _CategoryPreviewCard(
+                  category: visibleEntries[index].key,
+                  count: visibleEntries[index].value,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _HomeSectionTitle extends StatelessWidget {
+  const _HomeSectionTitle({required this.title, this.action});
+
+  final String title;
+  final VoidCallback? action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: CatchLingoColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        if (action != null)
+          TextButton(onPressed: action, child: const Text('View all')),
+      ],
+    );
+  }
+}
+
+class _CategoryPreviewCard extends StatelessWidget {
+  const _CategoryPreviewCard({required this.category, required this.count});
+
+  final String category;
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 124,
+      padding: const EdgeInsets.all(CatchLingoSpacing.md),
+      decoration: BoxDecoration(
+        color: CatchLingoColors.warmSurface,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _ObjectIconBadge(category: category),
+          const SizedBox(height: CatchLingoSpacing.sm),
+          Text(
+            category,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: CatchLingoColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          Text(
+            '$count caught',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: CatchLingoColors.textMuted,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ObjectIconBadge extends StatelessWidget {
+  const _ObjectIconBadge({required this.category});
+
+  final String category;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = catchCategoryIcon(category);
+
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: CatchLingoColors.amber.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Icon(icon, color: CatchLingoColors.warmGreen, size: 22),
     );
   }
 }
@@ -238,345 +679,6 @@ class _HomeEntry extends StatelessWidget {
           end: Offset.zero,
         ).animate(curved),
         child: child,
-      ),
-    );
-  }
-}
-
-class _HeroMark extends StatelessWidget {
-  const _HeroMark();
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      height: 430,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(CatchLingoRadius.panel + 8),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFE8D5B0), Color(0xFFD4C09A), Color(0xFFC8B48A)],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 28,
-            offset: const Offset(0, 14),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          const Positioned.fill(child: _HomeLensFrame()),
-          Positioned(
-            top: 22,
-            left: 22,
-            child: _HeroPill(
-              icon: Icons.camera_alt_rounded,
-              label: 'Live discovery',
-              color: colorScheme.primary,
-            ),
-          ),
-          Center(
-            child: Container(
-              width: 86,
-              height: 86,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(999),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFFFFFFF), Color(0xFFF5EDD8)],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.14),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.auto_awesome_rounded,
-                size: 40,
-                color: CatchLingoColors.amber,
-              ),
-            ),
-          ),
-          const Positioned(
-            left: 0,
-            right: 0,
-            bottom: 28,
-            child: Center(child: _GreetingCat()),
-          ),
-          const Positioned(
-            left: 34,
-            bottom: 142,
-            child: _MiniWordChip(label: 'kursi'),
-          ),
-          const Positioned(
-            right: 34,
-            bottom: 160,
-            child: _MiniWordChip(label: 'kopi'),
-          ),
-          const Positioned(
-            right: 54,
-            top: 78,
-            child: _ObjectMarker(icon: Icons.local_cafe_rounded),
-          ),
-          const Positioned(
-            left: 50,
-            top: 94,
-            child: _ObjectMarker(icon: Icons.chair_rounded),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GreetingCat extends StatelessWidget {
-  const _GreetingCat();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 178,
-      height: 178,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(999),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.32),
-            blurRadius: 28,
-            offset: const Offset(0, 16),
-          ),
-        ],
-      ),
-      child: Image.asset(
-        'assets/images/welcome_cat.png',
-        fit: BoxFit.contain,
-        semanticLabel: 'Welcoming black and white cat',
-      ),
-    );
-  }
-}
-
-class _HomeLensFrame extends StatelessWidget {
-  const _HomeLensFrame();
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: CustomPaint(
-        painter: _HomeLensFramePainter(
-          color: Colors.white.withValues(alpha: 0.36),
-        ),
-      ),
-    );
-  }
-}
-
-class _HomeLensFramePainter extends CustomPainter {
-  const _HomeLensFramePainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    const inset = 30.0;
-    const length = 38.0;
-    final right = size.width - inset;
-    final bottom = size.height - inset;
-
-    canvas.drawLine(
-      const Offset(inset, inset),
-      const Offset(inset + length, inset),
-      paint,
-    );
-    canvas.drawLine(
-      const Offset(inset, inset),
-      const Offset(inset, inset + length),
-      paint,
-    );
-    canvas.drawLine(Offset(right, inset), Offset(right - length, inset), paint);
-    canvas.drawLine(Offset(right, inset), Offset(right, inset + length), paint);
-    canvas.drawLine(
-      Offset(inset, bottom),
-      Offset(inset + length, bottom),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(inset, bottom),
-      Offset(inset, bottom - length),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(right, bottom),
-      Offset(right - length, bottom),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(right, bottom),
-      Offset(right, bottom - length),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _HomeLensFramePainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}
-
-class _HeroPill extends StatelessWidget {
-  const _HeroPill({
-    required this.icon,
-    required this.label,
-    required this.color,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.86),
-        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: CatchLingoColors.warmGreen),
-          const SizedBox(width: CatchLingoSpacing.sm),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: CatchLingoColors.textPrimary,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ObjectMarker extends StatelessWidget {
-  const _ObjectMarker({required this.icon});
-
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.72),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.16),
-        ),
-      ),
-      child: Icon(icon, color: Theme.of(context).colorScheme.primary),
-    );
-  }
-}
-
-class _MiniWordChip extends StatelessWidget {
-  const _MiniWordChip({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: CatchLingoColors.warmGreen,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _CollectionStatusCard extends StatelessWidget {
-  const _CollectionStatusCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: CatchLingoColors.warmSurface,
-        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: CatchLingoColors.amber.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                Icons.auto_awesome_rounded,
-                color: CatchLingoColors.amber,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'No words collected yet.',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: CatchLingoColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    'Start a discovery session and catch your first word.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: CatchLingoColors.textMuted,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
