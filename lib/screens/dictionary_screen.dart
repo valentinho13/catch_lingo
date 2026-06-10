@@ -1,74 +1,347 @@
 import 'package:flutter/material.dart';
 
 import '../app/app_theme.dart';
+import '../data/caught_word_storage.dart';
+import '../models/catch_word.dart';
+import '../widgets/catch_lingo_bottom_nav.dart';
+import '../widgets/word_visuals.dart';
 import 'explore_screen.dart';
+import 'home_screen.dart';
+import 'review_screen.dart';
 
-class DictionaryScreen extends StatelessWidget {
+class DictionaryScreen extends StatefulWidget {
   const DictionaryScreen({super.key});
 
-  static const _previewWords = [
-    _DictionaryPreviewWord(
-      target: 'kursi',
-      source: 'chair',
-      category: 'Home',
-      status: 'New',
-      color: Color(0xFFE5F7EF),
-    ),
-    _DictionaryPreviewWord(
-      target: 'botol',
-      source: 'bottle',
-      category: 'Travel',
-      status: 'Caught',
-      color: Color(0xFFEFF3FF),
-    ),
-  ];
+  @override
+  State<DictionaryScreen> createState() => _DictionaryScreenState();
+}
+
+class _DictionaryScreenState extends State<DictionaryScreen> {
+  static const _storage = CaughtWordStorage();
+
+  late Future<List<CatchWord>> _wordsFuture;
+  final _searchController = TextEditingController();
+  var _isSearching = false;
+  var _searchQuery = '';
+  String? _selectedCategory;
+
+  @override
+  void initState() {
+    super.initState();
+    _wordsFuture = _storage.loadWords();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _openExplore() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ExploreScreen()));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _wordsFuture = _storage.loadWords();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Dictionary')),
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [CatchLingoColors.background, Color(0xFFEFF8F6)],
+      backgroundColor: CatchLingoColors.canvas,
+      appBar: AppBar(
+        title: const Text('Dictionary'),
+        actions: [
+          IconButton(
+            onPressed: _toggleSearch,
+            icon: Icon(
+              _isSearching ? Icons.close_rounded : Icons.search_rounded,
+            ),
+            tooltip: _isSearching ? 'Close search' : 'Search',
           ),
-        ),
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            children: [
-              const _DictionaryEmptyState(),
-              const SizedBox(height: CatchLingoSpacing.xl),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Recent catches',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
+        ],
+      ),
+      bottomNavigationBar: CatchLingoBottomNav(
+        selectedTab: CatchLingoTab.dictionary,
+        onSelected: _openTab,
+      ),
+      body: SafeArea(
+        child: FutureBuilder<List<CatchWord>>(
+          future: _wordsFuture,
+          builder: (context, snapshot) {
+            final words = snapshot.data ?? [];
+
+            if (words.isEmpty) {
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  CatchLingoSpacing.screen,
+                  CatchLingoSpacing.sm,
+                  CatchLingoSpacing.screen,
+                  CatchLingoSpacing.screen,
+                ),
+                children: [_DictionaryEmptyState(onExplore: _openExplore)],
+              );
+            }
+
+            final searchedWords = _filterWords(words);
+            final availableCategories = _groupWordsByCategory(
+              searchedWords,
+            ).keys.toList();
+            final visibleWords = _filterWordsByCategory(searchedWords);
+            final groupedWords = _groupWordsByCategory(visibleWords);
+            final hasQuery = _searchQuery.trim().isNotEmpty;
+            final selectedCategory = _selectedCategory;
+
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(
+                CatchLingoSpacing.screen,
+                CatchLingoSpacing.sm,
+                CatchLingoSpacing.screen,
+                CatchLingoSpacing.screen,
+              ),
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Dictionary',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: CatchLingoColors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
                       ),
                     ),
-                  ),
-                  const _ShelfCountPill(count: 2),
-                ],
-              ),
-              const SizedBox(height: CatchLingoSpacing.sm),
-              Text(
-                'A preview of words discovered from real scenes.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: CatchLingoColors.textMuted,
+                    _ShelfCountPill(count: words.length),
+                  ],
                 ),
-              ),
-              const SizedBox(height: CatchLingoSpacing.lg),
-              const _FilterPreview(),
-              const SizedBox(height: CatchLingoSpacing.lg),
-              for (final word in _previewWords) ...[
-                _DictionaryWordCard(word: word),
-                const SizedBox(height: CatchLingoSpacing.md),
+                const SizedBox(height: CatchLingoSpacing.xs),
+                Text(
+                  hasQuery
+                      ? '${visibleWords.length} ${visibleWords.length == 1 ? 'match' : 'matches'} found'
+                      : selectedCategory == null
+                      ? '${words.length} words collected'
+                      : '${visibleWords.length} ${visibleWords.length == 1 ? 'word' : 'words'} in $selectedCategory',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: CatchLingoColors.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (_isSearching) ...[
+                  const SizedBox(height: CatchLingoSpacing.md),
+                  _DictionarySearchField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
+                ],
+                if (searchedWords.isNotEmpty) ...[
+                  const SizedBox(height: CatchLingoSpacing.md),
+                  _DictionaryFilters(
+                    categories: availableCategories,
+                    selectedCategory: _selectedCategory,
+                    onSelected: _selectCategory,
+                  ),
+                ],
+                const SizedBox(height: CatchLingoSpacing.xl),
+                if (visibleWords.isEmpty)
+                  _DictionaryNoResults(
+                    isFiltered: hasQuery || selectedCategory != null,
+                    query: _searchQuery,
+                  )
+                else
+                  for (final entry in groupedWords.entries) ...[
+                    _CategorySectionHeader(
+                      label: entry.key,
+                      count: entry.value.length,
+                    ),
+                    const SizedBox(height: CatchLingoSpacing.sm),
+                    for (final indexedWord in entry.value.indexed) ...[
+                      _StaggeredDictionaryEntry(
+                        index: indexedWord.$1,
+                        child: _DictionaryWordCard(word: indexedWord.$2),
+                      ),
+                      const SizedBox(height: CatchLingoSpacing.md),
+                    ],
+                    const SizedBox(height: CatchLingoSpacing.sm),
+                  ],
               ],
-            ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+
+      if (!_isSearching) {
+        _searchQuery = '';
+        _searchController.clear();
+      }
+    });
+  }
+
+  void _selectCategory(String? category) {
+    setState(() {
+      _selectedCategory = category;
+    });
+  }
+
+  List<CatchWord> _filterWords(List<CatchWord> words) {
+    final query = _searchQuery.trim().toLowerCase();
+
+    if (query.isEmpty) {
+      return words;
+    }
+
+    return words.where((word) {
+      final category = _categoryLabel(word.category).toLowerCase();
+
+      return word.source.toLowerCase().contains(query) ||
+          word.translation.toLowerCase().contains(query) ||
+          category.contains(query);
+    }).toList();
+  }
+
+  List<CatchWord> _filterWordsByCategory(List<CatchWord> words) {
+    final selectedCategory = _selectedCategory;
+
+    if (selectedCategory == null) {
+      return words;
+    }
+
+    return words
+        .where((word) => _categoryLabel(word.category) == selectedCategory)
+        .toList();
+  }
+
+  Map<String, List<CatchWord>> _groupWordsByCategory(List<CatchWord> words) {
+    final groupedWords = <String, List<CatchWord>>{};
+
+    for (final word in words) {
+      final category = _categoryLabel(word.category);
+      groupedWords.putIfAbsent(category, () => []).add(word);
+    }
+
+    final sortedEntries = groupedWords.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    return Map.fromEntries(sortedEntries);
+  }
+
+  void _openTab(CatchLingoTab tab) {
+    switch (tab) {
+      case CatchLingoTab.discover:
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+        break;
+      case CatchLingoTab.dictionary:
+        break;
+      case CatchLingoTab.review:
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const ReviewScreen()),
+        );
+        break;
+    }
+  }
+}
+
+String _categoryLabel(String category) {
+  final trimmedCategory = category.trim();
+
+  if (trimmedCategory.isEmpty) {
+    return 'Other';
+  }
+
+  return trimmedCategory;
+}
+
+class _DictionaryFilters extends StatelessWidget {
+  const _DictionaryFilters({
+    required this.categories,
+    required this.selectedCategory,
+    required this.onSelected,
+  });
+
+  final List<String> categories;
+  final String? selectedCategory;
+  final ValueChanged<String?> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final filters = ['All', ...categories];
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (var index = 0; index < filters.length; index++) ...[
+            if (index > 0) const SizedBox(width: CatchLingoSpacing.sm),
+            _FilterChip(
+              label: filters[index],
+              isSelected: index == 0
+                  ? selectedCategory == null
+                  : selectedCategory == filters[index],
+              onTap: () => onSelected(index == 0 ? null : filters[index]),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DictionarySearchField extends StatelessWidget {
+  const _DictionarySearchField({
+    required this.controller,
+    required this.onChanged,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      autofocus: true,
+      controller: controller,
+      onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'Search caught words',
+        prefixIcon: const Icon(Icons.search_rounded),
+        filled: true,
+        fillColor: CatchLingoColors.warmSurface,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CatchLingoRadius.button),
+          borderSide: BorderSide(
+            color: CatchLingoColors.textPrimary.withValues(alpha: 0.08),
+          ),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CatchLingoRadius.button),
+          borderSide: BorderSide(
+            color: CatchLingoColors.textPrimary.withValues(alpha: 0.08),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(CatchLingoRadius.button),
+          borderSide: const BorderSide(
+            color: CatchLingoColors.warmGreen,
+            width: 1.4,
           ),
         ),
       ),
@@ -76,75 +349,183 @@ class DictionaryScreen extends StatelessWidget {
   }
 }
 
-class _DictionaryEmptyState extends StatelessWidget {
-  const _DictionaryEmptyState();
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+        child: AnimatedContainer(
+          duration: CatchLingoMotion.chip,
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? CatchLingoColors.warmGreen
+                : CatchLingoColors.warmSurface,
+            borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+            border: Border.all(
+              color: isSelected
+                  ? CatchLingoColors.warmGreen
+                  : CatchLingoColors.textPrimary.withValues(alpha: 0.06),
+            ),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: isSelected ? Colors.white : CatchLingoColors.textMuted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
+class _DictionaryNoResults extends StatelessWidget {
+  const _DictionaryNoResults({required this.isFiltered, required this.query});
+
+  final bool isFiltered;
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.all(CatchLingoSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
+        color: CatchLingoColors.warmSurface,
         borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
-        border: Border.all(color: Colors.white),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
+        border: Border.all(
+          color: CatchLingoColors.textPrimary.withValues(alpha: 0.06),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: CatchLingoColors.amber.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.manage_search_rounded,
+              color: CatchLingoColors.amber,
+            ),
+          ),
+          const SizedBox(width: CatchLingoSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'No matching words',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: CatchLingoColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  !isFiltered
+                      ? 'Catch more real-world words to grow this collection.'
+                      : query.trim().isEmpty
+                      ? 'Choose All to see every caught word again.'
+                      : 'Try another caught word, translation, or category.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: CatchLingoColors.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          children: [
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFE9E8FF), Color(0xFFE4F7F1)],
-                ),
-                borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+    );
+  }
+}
+
+class _DictionaryEmptyState extends StatelessWidget {
+  const _DictionaryEmptyState({required this.onExplore});
+
+  final VoidCallback onExplore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: CatchLingoColors.warmSurface,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: CatchLingoColors.mint.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+              border: Border.all(
+                color: CatchLingoColors.mint.withValues(alpha: 0.20),
               ),
-              child: Icon(
-                Icons.menu_book_rounded,
-                size: 42,
-                color: colorScheme.onPrimaryContainer,
-              ),
             ),
-            const SizedBox(height: CatchLingoSpacing.lg),
-            Text(
-              'No words collected yet.',
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+            child: const Icon(
+              Icons.menu_book_rounded,
+              size: 42,
+              color: CatchLingoColors.mint,
             ),
-            const SizedBox(height: CatchLingoSpacing.sm),
-            Text(
-              'Start exploring to catch your first words.',
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+          ),
+          const SizedBox(height: CatchLingoSpacing.lg),
+          Text(
+            'No words collected yet.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: CatchLingoColors.textPrimary,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: CatchLingoSpacing.lg),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ExploreScreen()),
-                );
-              },
-              icon: const Icon(Icons.travel_explore_rounded),
-              label: const Text('Start Exploring'),
+          ),
+          const SizedBox(height: CatchLingoSpacing.sm),
+          Text(
+            'Catch words in Explore and they will appear here as your collection grows.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: CatchLingoColors.textMuted,
+              fontWeight: FontWeight.w500,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: CatchLingoSpacing.lg),
+          FilledButton.icon(
+            onPressed: onExplore,
+            style: FilledButton.styleFrom(
+              backgroundColor: CatchLingoColors.warmGreen,
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.travel_explore_rounded),
+            label: const Text('Start Exploring'),
+          ),
+        ],
       ),
     );
   }
@@ -160,13 +541,16 @@ class _ShelfCountPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: CatchLingoColors.mint.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+        border: Border.all(
+          color: CatchLingoColors.mint.withValues(alpha: 0.20),
+        ),
       ),
       child: Text(
-        '$count preview',
+        '$count caught words',
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          color: CatchLingoColors.mint,
           fontWeight: FontWeight.w900,
         ),
       ),
@@ -174,50 +558,65 @@ class _ShelfCountPill extends StatelessWidget {
   }
 }
 
-class _FilterPreview extends StatelessWidget {
-  const _FilterPreview();
+class _CategorySectionHeader extends StatelessWidget {
+  const _CategorySectionHeader({required this.label, required this.count});
+
+  final String label;
+  final int count;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: const [
-        _FilterPill(label: 'All', isSelected: true),
-        _FilterPill(label: 'New'),
-        _FilterPill(label: 'Learning'),
-        _FilterPill(label: 'Known'),
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: CatchLingoColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        Text(
+          '$count ${count == 1 ? 'word' : 'words'}',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: CatchLingoColors.textMuted,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
 }
 
-class _FilterPill extends StatelessWidget {
-  const _FilterPill({required this.label, this.isSelected = false});
+class _StaggeredDictionaryEntry extends StatelessWidget {
+  const _StaggeredDictionaryEntry({required this.index, required this.child});
 
-  final String label;
-  final bool isSelected;
+  final int index;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 260 + (index.clamp(0, 5) * 45)),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        final eased = Curves.easeOutCubic.transform(value);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? colorScheme.primary : Colors.white,
-        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
-        border: Border.all(
-          color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
-        ),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
+        return Opacity(
+          opacity: eased,
+          child: Transform.translate(
+            offset: Offset(0, 14 * (1 - eased)),
+            child: Transform.scale(
+              scale: 0.985 + 0.015 * eased,
+              alignment: Alignment.topCenter,
+              child: child,
+            ),
+          ),
+        );
+      },
+      child: child,
     );
   }
 }
@@ -225,131 +624,123 @@ class _FilterPill extends StatelessWidget {
 class _DictionaryWordCard extends StatelessWidget {
   const _DictionaryWordCard({required this.word});
 
-  final _DictionaryPreviewWord word;
+  final CatchWord word;
 
   @override
   Widget build(BuildContext context) {
+    final category = _categoryLabel(word.category);
+
     return Container(
+      padding: const EdgeInsets.all(CatchLingoSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
-        border: Border.all(color: Colors.white),
-        boxShadow: const [
+        color: CatchLingoColors.warmSurface,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
           BoxShadow(
-            color: Color(0x0F202338),
-            blurRadius: 20,
-            offset: Offset(0, 12),
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [word.color, Colors.white],
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.check_circle_rounded,
-                color: CatchLingoColors.successIcon,
-              ),
-            ),
-            const SizedBox(width: CatchLingoSpacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    word.target,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: CatchLingoColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.visibility_rounded,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: CatchLingoSpacing.xs),
-                      Text(
-                        word.source,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: CatchLingoColors.textMuted,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _WordObjectBadge(word: word),
+          const SizedBox(width: CatchLingoSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: RichText(
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: CatchLingoColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                          children: [
+                            TextSpan(text: word.source),
+                            TextSpan(
+                              text: '   ${word.translation}',
+                              style: TextStyle(
+                                color: CatchLingoColors.textMuted.withValues(
+                                  alpha: 0.72,
+                                ),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$category · ${_lastSeenLabel(word.lastSeenAt)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: CatchLingoColors.textMuted,
+                    fontWeight: FontWeight.w500,
                   ),
-                  const SizedBox(height: CatchLingoSpacing.sm),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      _StatusBadge(label: word.category),
-                      _StatusBadge(label: word.status, isStrong: true),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: CatchLingoSpacing.sm),
+          Icon(
+            Icons.bookmark_rounded,
+            color: CatchLingoColors.warmGreen,
+            size: 24,
+          ),
+        ],
       ),
     );
   }
+
+  String _lastSeenLabel(DateTime? lastSeenAt) {
+    if (lastSeenAt == null) {
+      return 'Last spotted recently';
+    }
+
+    final difference = DateTime.now().difference(lastSeenAt);
+
+    if (difference.inDays == 0) {
+      return 'Last spotted today';
+    }
+
+    if (difference.inDays == 1) {
+      return 'Last spotted yesterday';
+    }
+
+    return 'Last spotted ${difference.inDays} days ago';
+  }
 }
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, this.isStrong = false});
+class _WordObjectBadge extends StatelessWidget {
+  const _WordObjectBadge({required this.word});
 
-  final String label;
-  final bool isStrong;
+  final CatchWord word;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final icon = catchWordIcon(word);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      width: 52,
+      height: 52,
       decoration: BoxDecoration(
-        color: isStrong
-            ? const Color(0xFFE5F7EF)
-            : colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+        color: CatchLingoColors.amber.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(18),
       ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: isStrong ? const Color(0xFF145C3F) : Colors.black54,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
+      child: Icon(icon, color: CatchLingoColors.textPrimary, size: 26),
     );
   }
-}
-
-class _DictionaryPreviewWord {
-  const _DictionaryPreviewWord({
-    required this.target,
-    required this.source,
-    required this.category,
-    required this.status,
-    required this.color,
-  });
-
-  final String target;
-  final String source;
-  final String category;
-  final String status;
-  final Color color;
 }

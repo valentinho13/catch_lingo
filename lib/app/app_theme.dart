@@ -3,16 +3,35 @@ import 'package:flutter/material.dart';
 class CatchLingoColors {
   const CatchLingoColors._();
 
-  static const seed = Color(0xFF5B5FEF);
-  static const background = Color(0xFFF4F7FB);
-  static const textPrimary = Color(0xFF202338);
-  static const textMuted = Color(0xFF6D7282);
-  static const discoverySurface = Color(0xFFEFF4FF);
-  static const tealAccent = Color(0xFF37BFA6);
-  static const successSurface = Color(0xFFE5F7EF);
-  static const successBorder = Color(0xFF65C99A);
-  static const successText = Color(0xFF145C3F);
-  static const successIcon = Color(0xFF168657);
+  // Seed for Material ColorScheme — warm living green
+  static const seed = Color(0xFF4A7C59);
+
+  // Discovery green (living, growing — replaces cold mint)
+  static const mint = Color(0xFF4A7C59);
+  static const warmGreen = Color(0xFF4A7C59);
+
+  // Reward amber — the caught word, treasure, warmth
+  static const amber = Color(0xFFD4820A);
+
+  // Canvas — the warm cream base of every screen
+  static const canvas = Color(0xFFF5F0E8);
+  static const background = Color(0xFFF5F0E8);
+
+  // Warm off-white surface for cards
+  static const warmSurface = Color(0xFFFAF6EE);
+
+  // Text
+  static const textPrimary = Color(0xFF2C2418);
+  static const textMuted = Color(0xFF7A6E5F);
+
+  // Discovery area surface
+  static const discoverySurface = Color(0xFFF0EAD6);
+
+  // Kept for catch_word_chip — warm green tones
+  static const successSurface = Color(0xFFEAF2EC);
+  static const successBorder = Color(0xFF6BAF7E);
+  static const successText = Color(0xFF2A5C3A);
+  static const successIcon = Color(0xFF3A7D50);
 }
 
 class CatchLingoSpacing {
@@ -67,8 +86,8 @@ class CatchLingoTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: Colors.white,
-        surfaceTintColor: Colors.white,
+        color: CatchLingoColors.warmSurface,
+        surfaceTintColor: Colors.transparent,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(CatchLingoRadius.card),
@@ -94,7 +113,7 @@ class CatchLingoTheme {
       ),
       chipTheme: const ChipThemeData(
         shape: StadiumBorder(),
-        side: BorderSide(color: Color(0xFFE2E5F2)),
+        side: BorderSide(color: Color(0xFFD8CEBA)),
       ),
       useMaterial3: true,
     );

@@ -40,13 +40,16 @@ class _CompactCounter extends StatelessWidget {
       key: ValueKey('compact-$count'),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: const Color(0xFF121615).withValues(alpha: 0.90),
         borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+        border: Border.all(
+          color: CatchLingoColors.mint.withValues(alpha: 0.22),
+        ),
       ),
       child: Text(
-        '$count caught',
+        '$count caught words',
         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          color: CatchLingoColors.mint,
           fontWeight: FontWeight.w900,
         ),
       ),
@@ -61,23 +64,26 @@ class _SessionCounter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
+    return Container(
       key: ValueKey('session-$count'),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111414).withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(CatchLingoSpacing.lg),
         child: Row(
           children: [
-            Icon(
-              Icons.auto_awesome_rounded,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+            Icon(Icons.auto_awesome_rounded, color: CatchLingoColors.mint),
             const SizedBox(width: CatchLingoSpacing.md),
             Expanded(
               child: Text(
-                '$count caught this session',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                '$count words collected',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ],
