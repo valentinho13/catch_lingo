@@ -80,26 +80,27 @@ Prefer:
 
 ## Color Direction
 
-The MVP can use a simple seed color system.
+See `DESIGN_VISION.md` for the canonical color philosophy. This is the practical
+summary.
 
-Suggested direction:
+The palette is warm and naturally lit:
 
-- primary: indigo / blue-violet
-- secondary: teal / green-blue
-- success: soft green
-- background: white / near-white
-- surface: soft elevated cards
-- dark mode later: deep navy / charcoal
+- canvas / background: warm cream and soft warm neutrals
+- surface: warm off-white elevated cards (never stark white, never dark)
+- primary / discovery: a living green
+- reward: a warm amber
+- muted: warm gray
 
 Semantic color use:
 
-- primary: exploration and main action
-- green: caught / success
-- amber: review / attention
-- muted gray: known / inactive
-- soft lavender: discovery / suggestion
+- green: discovery / main action / something worth noticing
+- amber: reward / caught / a treasured find
+- cream + warm neutrals: the calm canvas
+- warm gray: known / inactive
 
-Avoid overly saturated toy colors.
+Avoid: cool blues / indigo / lavender, cold grays, dark "night" / navy / charcoal
+surfaces, neon, and overly saturated toy colors. The earlier indigo + mint and
+dark-mode direction is retired in favor of the warm vision.
 
 ## Typography
 

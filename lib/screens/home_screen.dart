@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app/app_theme.dart';
 import 'dictionary_screen.dart';
 import 'explore_screen.dart';
+import 'review_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,57 +34,62 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF8FAFF),
-              CatchLingoColors.background,
-              Color(0xFFEFF8F6),
-            ],
-          ),
-        ),
-        child: SafeArea(
+      backgroundColor: CatchLingoColors.canvas,
+      body: SafeArea(
           child: ListView(
             padding: const EdgeInsets.all(CatchLingoSpacing.screen),
             children: [
-              const SizedBox(height: 12),
+              const SizedBox(height: CatchLingoSpacing.sm),
               _HomeEntry(
                 animation: _controller,
                 begin: 0,
-                end: 0.45,
-                child: const _HeroMark(),
+                end: 0.32,
+                child: const _BrandLockup(),
               ),
-              const SizedBox(height: CatchLingoSpacing.xl),
+              const SizedBox(height: CatchLingoSpacing.lg),
               _HomeEntry(
                 animation: _controller,
-                begin: 0.12,
-                end: 0.58,
-                child: Text(
-                  'CatchLingo',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    color: CatchLingoColors.textPrimary,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0,
+                begin: 0.08,
+                end: 0.48,
+                child: RichText(
+                  text: TextSpan(
+                    style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                      color: CatchLingoColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                      height: 0.98,
+                      letterSpacing: 0,
+                    ),
+                    children: const [
+                      TextSpan(text: 'Explore the world.\n'),
+                      TextSpan(
+                        text: 'Catch',
+                        style: TextStyle(color: CatchLingoColors.warmGreen),
+                      ),
+                      TextSpan(text: ' new words.'),
+                    ],
                   ),
                 ),
               ),
               const SizedBox(height: CatchLingoSpacing.md),
               _HomeEntry(
                 animation: _controller,
-                begin: 0.20,
-                end: 0.66,
+                begin: 0.16,
+                end: 0.54,
                 child: Text(
-                  'Catch words from the world around you.',
-                  textAlign: TextAlign.center,
+                  'Point. Discover. Learn.',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: CatchLingoColors.textMuted,
+                    fontWeight: FontWeight.w500,
                     height: 1.35,
                   ),
                 ),
+              ),
+              const SizedBox(height: CatchLingoSpacing.xl),
+              _HomeEntry(
+                animation: _controller,
+                begin: 0.22,
+                end: 0.45,
+                child: const _HeroMark(),
               ),
               const SizedBox(height: CatchLingoSpacing.xl),
               _HomeEntry(
@@ -98,6 +104,10 @@ class _HomeScreenState extends State<HomeScreen>
                 begin: 0.42,
                 end: 0.92,
                 child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: CatchLingoColors.warmGreen,
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const ExploreScreen()),
@@ -111,8 +121,14 @@ class _HomeScreenState extends State<HomeScreen>
               _HomeEntry(
                 animation: _controller,
                 begin: 0.52,
-                end: 1,
+                end: 0.96,
                 child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: CatchLingoColors.textPrimary,
+                    side: BorderSide(
+                      color: CatchLingoColors.textPrimary.withValues(alpha: 0.22),
+                    ),
+                  ),
                   onPressed: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
@@ -124,10 +140,74 @@ class _HomeScreenState extends State<HomeScreen>
                   label: const Text('My Dictionary'),
                 ),
               ),
+              const SizedBox(height: CatchLingoSpacing.md),
+              _HomeEntry(
+                animation: _controller,
+                begin: 0.62,
+                end: 1,
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: CatchLingoColors.textPrimary,
+                    side: BorderSide(
+                      color: CatchLingoColors.textPrimary.withValues(alpha: 0.22),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ReviewScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.style_rounded),
+                  label: const Text('Review'),
+                ),
+              ),
             ],
           ),
-        ),
       ),
+    );
+  }
+}
+
+class _BrandLockup extends StatelessWidget {
+  const _BrandLockup();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: CatchLingoColors.warmGreen,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: CatchLingoColors.warmGreen.withValues(alpha: 0.20),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: const Center(
+            child: Text(
+              'C',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: CatchLingoSpacing.md),
+        Text(
+          'CatchLingo',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: CatchLingoColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -173,20 +253,19 @@ class _HeroMark extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
-      height: 258,
+      height: 430,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(CatchLingoRadius.panel + 8),
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFFFFFF), Color(0xFFEFF4FF), Color(0xFFEAF8F5)],
+          colors: [Color(0xFFE8D5B0), Color(0xFFD4C09A), Color(0xFFC8B48A)],
         ),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.86)),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.12),
-            blurRadius: 30,
-            offset: const Offset(0, 18),
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 28,
+            offset: const Offset(0, 14),
           ),
         ],
       ),
@@ -204,39 +283,44 @@ class _HeroMark extends StatelessWidget {
           ),
           Center(
             child: Container(
-              width: 104,
-              height: 104,
+              width: 86,
+              height: 86,
               decoration: BoxDecoration(
-                color: colorScheme.primary,
-                borderRadius: BorderRadius.circular(34),
+                borderRadius: BorderRadius.circular(999),
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [CatchLingoColors.seed, CatchLingoColors.tealAccent],
+                  colors: [Color(0xFFFFFFFF), Color(0xFFF5EDD8)],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: colorScheme.primary.withValues(alpha: 0.22),
-                    blurRadius: 28,
-                    offset: const Offset(0, 16),
+                    color: Colors.black.withValues(alpha: 0.14),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
               child: const Icon(
-                Icons.center_focus_strong_rounded,
-                size: 54,
-                color: Colors.white,
+                Icons.auto_awesome_rounded,
+                size: 40,
+                color: CatchLingoColors.amber,
               ),
             ),
           ),
           const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 28,
+            child: Center(child: _GreetingCat()),
+          ),
+          const Positioned(
             left: 34,
-            bottom: 34,
+            bottom: 142,
             child: _MiniWordChip(label: 'kursi'),
           ),
           const Positioned(
             right: 34,
-            bottom: 44,
+            bottom: 160,
             child: _MiniWordChip(label: 'kopi'),
           ),
           const Positioned(
@@ -255,6 +339,33 @@ class _HeroMark extends StatelessWidget {
   }
 }
 
+class _GreetingCat extends StatelessWidget {
+  const _GreetingCat();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 178,
+      height: 178,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.32),
+            blurRadius: 28,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Image.asset(
+        'assets/images/welcome_cat.png',
+        fit: BoxFit.contain,
+        semanticLabel: 'Welcoming black and white cat',
+      ),
+    );
+  }
+}
+
 class _HomeLensFrame extends StatelessWidget {
   const _HomeLensFrame();
 
@@ -263,7 +374,7 @@ class _HomeLensFrame extends StatelessWidget {
     return IgnorePointer(
       child: CustomPaint(
         painter: _HomeLensFramePainter(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.16),
+          color: Colors.white.withValues(alpha: 0.36),
         ),
       ),
     );
@@ -350,7 +461,7 @@ class _HeroPill extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
+          Icon(icon, size: 16, color: CatchLingoColors.warmGreen),
           const SizedBox(width: CatchLingoSpacing.sm),
           Text(
             label,
@@ -397,14 +508,14 @@ class _MiniWordChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: Colors.white.withValues(alpha: 0.88),
         borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
-          fontWeight: FontWeight.w800,
+          color: CatchLingoColors.warmGreen,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -416,18 +527,15 @@ class _CollectionStatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: CatchLingoColors.warmSurface,
         borderRadius: BorderRadius.circular(CatchLingoRadius.card),
-        border: Border.all(color: Colors.white),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.08),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -439,19 +547,12 @@ class _CollectionStatusCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    colorScheme.secondaryContainer,
-                    CatchLingoColors.successSurface,
-                  ],
-                ),
+                color: CatchLingoColors.amber.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Icon(
                 Icons.auto_awesome_rounded,
-                color: colorScheme.onSecondaryContainer,
+                color: CatchLingoColors.amber,
               ),
             ),
             const SizedBox(width: 14),
@@ -462,15 +563,16 @@ class _CollectionStatusCard extends StatelessWidget {
                   Text(
                     'No words collected yet.',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w800,
+                      color: CatchLingoColors.textPrimary,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     'Start a discovery session and catch your first word.',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: CatchLingoColors.textMuted,
+                    ),
                   ),
                 ],
               ),

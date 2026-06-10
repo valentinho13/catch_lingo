@@ -2,13 +2,18 @@
 
 ## Purpose
 
-This document defines the visual and UX direction for CatchLingo.
+This document defines the practical UX and component direction for CatchLingo.
+
+For the emotional and visual identity — color meaning, atmosphere, warmth, and the
+overall feel — `DESIGN_VISION.md` is the **canonical authority**. Read it first. Where
+this document and `DESIGN_VISION.md` disagree, `DESIGN_VISION.md` wins.
 
 It should guide Codex, AI assistants, and human developers when building UI.
 
 CatchLingo must not become a generic Flutter vocabulary app.
 
-It must feel like a real-world word discovery experience.
+It must feel like a warm, real-world word discovery experience — sunlit and inviting,
+never cool, dark, or technical.
 
 ## Design North Star
 
@@ -24,6 +29,7 @@ Every screen should support this feeling.
 
 CatchLingo should feel:
 
+- warm
 - curious
 - calm
 - modern
@@ -33,6 +39,7 @@ CatchLingo should feel:
 - travel-ready
 - useful
 - slightly magical
+- premium / quietly crafted
 
 It should not feel:
 
@@ -154,24 +161,28 @@ Suggested values:
 
 ### Color System
 
+The palette is warm and naturally lit. See `DESIGN_VISION.md` for the full color
+philosophy; this is the practical mapping.
+
 Base:
 
-- primary: indigo / blue-violet
-- secondary: teal / cyan-green
-- success: soft green
-- warning: amber
-- surface: white / near-white
-- background: very light cool gray
+- canvas: warm cream / soft warm neutrals (the default mood of every screen)
+- surface: warm off-white cards (never stark white, never dark)
+- primary / discovery: a living, growing green — finding, "go," the alive thing
+- reward / treasure: a warm amber — the caught word, progress tokens, the companion
+- muted: warm grays for inactive / already-known
 
 Use color semantically:
 
-- primary = main action / exploration
-- teal/green = caught / success
-- lavender = discovery / suggestion
-- gray = inactive / already known
-- amber = review / needs attention
+- green = discovery / main action / something worth noticing
+- amber = reward / caught / a treasured find
+- cream + warm neutrals = the calm canvas everything rests on
+- warm gray = inactive / already known
 
-Avoid loud rainbow palettes.
+Color is emotional, not decorative — each hue means something and is used sparingly.
+
+Avoid: cool corporate blues / indigo / lavender, cold grays, dark "night" surfaces,
+neon, and loud rainbow palettes. The old indigo + mint direction is retired.
 
 ## Typography
 

@@ -1,150 +1,327 @@
 import 'package:flutter/material.dart';
 
 import '../app/app_theme.dart';
+import '../data/caught_word_storage.dart';
+import '../models/catch_word.dart';
 import 'explore_screen.dart';
 
-class DictionaryScreen extends StatelessWidget {
+class DictionaryScreen extends StatefulWidget {
   const DictionaryScreen({super.key});
 
-  static const _previewWords = [
-    _DictionaryPreviewWord(
-      target: 'kursi',
-      source: 'chair',
-      category: 'Home',
-      status: 'New',
-      color: Color(0xFFE5F7EF),
-    ),
-    _DictionaryPreviewWord(
-      target: 'botol',
-      source: 'bottle',
-      category: 'Travel',
-      status: 'Caught',
-      color: Color(0xFFEFF3FF),
-    ),
-  ];
+  @override
+  State<DictionaryScreen> createState() => _DictionaryScreenState();
+}
+
+class _DictionaryScreenState extends State<DictionaryScreen> {
+  static const _storage = CaughtWordStorage();
+
+  late Future<List<CatchWord>> _wordsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _wordsFuture = _storage.loadWords();
+  }
+
+  Future<void> _openExplore() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ExploreScreen()));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _wordsFuture = _storage.loadWords();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('My Dictionary')),
-      body: DecoratedBox(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [CatchLingoColors.background, Color(0xFFEFF8F6)],
-          ),
-        ),
-        child: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-            children: [
-              const _DictionaryEmptyState(),
-              const SizedBox(height: CatchLingoSpacing.xl),
-              Row(
+      backgroundColor: CatchLingoColors.canvas,
+      appBar: AppBar(
+        title: const Text('My Dictionary'),
+      ),
+      body: SafeArea(
+          child: FutureBuilder<List<CatchWord>>(
+            future: _wordsFuture,
+            builder: (context, snapshot) {
+              final words = snapshot.data ?? [];
+
+              if (words.isEmpty) {
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(
+                    CatchLingoSpacing.screen,
+                    CatchLingoSpacing.sm,
+                    CatchLingoSpacing.screen,
+                    CatchLingoSpacing.screen,
+                  ),
+                  children: [_DictionaryEmptyState(onExplore: _openExplore)],
+                );
+              }
+
+              final groupedWords = _groupWordsByCategory(words);
+
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  CatchLingoSpacing.screen,
+                  CatchLingoSpacing.sm,
+                  CatchLingoSpacing.screen,
+                  CatchLingoSpacing.screen,
+                ),
                 children: [
-                  Expanded(
-                    child: Text(
-                      'Recent catches',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Collection',
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                color: CatchLingoColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
                       ),
+                      _ShelfCountPill(count: words.length),
+                    ],
+                  ),
+                  const SizedBox(height: CatchLingoSpacing.xs),
+                  Text(
+                    'Words caught from real scenes.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: CatchLingoColors.textMuted,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const _ShelfCountPill(count: 2),
+                  const SizedBox(height: CatchLingoSpacing.lg),
+                  _CollectionStats(
+                    words: words,
+                    categoryCount: groupedWords.length,
+                  ),
+                  const SizedBox(height: CatchLingoSpacing.xl),
+                  for (final entry in groupedWords.entries) ...[
+                    _CategorySectionHeader(
+                      label: entry.key,
+                      count: entry.value.length,
+                    ),
+                    const SizedBox(height: CatchLingoSpacing.sm),
+                    for (final word in entry.value) ...[
+                      _DictionaryWordCard(word: word),
+                      const SizedBox(height: CatchLingoSpacing.md),
+                    ],
+                    const SizedBox(height: CatchLingoSpacing.sm),
+                  ],
                 ],
-              ),
-              const SizedBox(height: CatchLingoSpacing.sm),
-              Text(
-                'A preview of words discovered from real scenes.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: CatchLingoColors.textMuted,
-                ),
-              ),
-              const SizedBox(height: CatchLingoSpacing.lg),
-              const _FilterPreview(),
-              const SizedBox(height: CatchLingoSpacing.lg),
-              for (final word in _previewWords) ...[
-                _DictionaryWordCard(word: word),
-                const SizedBox(height: CatchLingoSpacing.md),
-              ],
-            ],
+              );
+            },
           ),
-        ),
+      ),
+    );
+  }
+
+  Map<String, List<CatchWord>> _groupWordsByCategory(List<CatchWord> words) {
+    final groupedWords = <String, List<CatchWord>>{};
+
+    for (final word in words) {
+      final category = _categoryLabel(word.category);
+      groupedWords.putIfAbsent(category, () => []).add(word);
+    }
+
+    final sortedEntries = groupedWords.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+
+    return Map.fromEntries(sortedEntries);
+  }
+}
+
+String _categoryLabel(String category) {
+  final trimmedCategory = category.trim();
+
+  if (trimmedCategory.isEmpty) {
+    return 'Other';
+  }
+
+  return trimmedCategory;
+}
+
+class _CollectionStats extends StatelessWidget {
+  const _CollectionStats({required this.words, required this.categoryCount});
+
+  final List<CatchWord> words;
+  final int categoryCount;
+
+  @override
+  Widget build(BuildContext context) {
+    final sightings = words.fold<int>(
+      0,
+      (total, word) => total + (word.seenCount <= 0 ? 1 : word.seenCount),
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(CatchLingoSpacing.lg),
+      decoration: BoxDecoration(
+        color: CatchLingoColors.warmSurface,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _StatTile(
+              label: 'Caught',
+              value: words.length.toString(),
+              icon: Icons.bookmark_added_rounded,
+            ),
+          ),
+          _StatDivider(),
+          Expanded(
+            child: _StatTile(
+              label: 'Sightings',
+              value: sightings.toString(),
+              icon: Icons.visibility_rounded,
+            ),
+          ),
+          _StatDivider(),
+          Expanded(
+            child: _StatTile(
+              label: 'Categories',
+              value: categoryCount.toString(),
+              icon: Icons.category_rounded,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _DictionaryEmptyState extends StatelessWidget {
-  const _DictionaryEmptyState();
+class _StatDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 46,
+      margin: const EdgeInsets.symmetric(horizontal: CatchLingoSpacing.sm),
+      color: CatchLingoColors.textPrimary.withValues(alpha: 0.10),
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  const _StatTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, color: CatchLingoColors.mint, size: 20),
+        const SizedBox(height: CatchLingoSpacing.sm),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: CatchLingoColors.textPrimary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: CatchLingoColors.textMuted,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
+class _DictionaryEmptyState extends StatelessWidget {
+  const _DictionaryEmptyState({required this.onExplore});
+
+  final VoidCallback onExplore;
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.94),
+        color: CatchLingoColors.warmSurface,
         borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
-        border: Border.all(color: Colors.white),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 14),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(22),
-        child: Column(
-          children: [
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Color(0xFFE9E8FF), Color(0xFFE4F7F1)],
-                ),
-                borderRadius: BorderRadius.circular(CatchLingoRadius.card),
-              ),
-              child: Icon(
-                Icons.menu_book_rounded,
-                size: 42,
-                color: colorScheme.onPrimaryContainer,
+      child: Column(
+        children: [
+          Container(
+            width: 76,
+            height: 76,
+            decoration: BoxDecoration(
+              color: CatchLingoColors.mint.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+              border: Border.all(
+                color: CatchLingoColors.mint.withValues(alpha: 0.20),
               ),
             ),
-            const SizedBox(height: CatchLingoSpacing.lg),
-            Text(
-              'No words collected yet.',
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+            child: const Icon(
+              Icons.menu_book_rounded,
+              size: 42,
+              color: CatchLingoColors.mint,
             ),
-            const SizedBox(height: CatchLingoSpacing.sm),
-            Text(
-              'Start exploring to catch your first words.',
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+          ),
+          const SizedBox(height: CatchLingoSpacing.lg),
+          Text(
+            'No words collected yet.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: CatchLingoColors.textPrimary,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: CatchLingoSpacing.lg),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ExploreScreen()),
-                );
-              },
-              icon: const Icon(Icons.travel_explore_rounded),
-              label: const Text('Start Exploring'),
+          ),
+          const SizedBox(height: CatchLingoSpacing.sm),
+          Text(
+            'Catch words in Explore and they will appear here as your collection grows.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: CatchLingoColors.textMuted,
+              fontWeight: FontWeight.w500,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: CatchLingoSpacing.lg),
+          FilledButton.icon(
+            onPressed: onExplore,
+            style: FilledButton.styleFrom(
+              backgroundColor: CatchLingoColors.warmGreen,
+              foregroundColor: Colors.white,
+            ),
+            icon: const Icon(Icons.travel_explore_rounded),
+            label: const Text('Start Exploring'),
+          ),
+        ],
       ),
     );
   }
@@ -160,13 +337,16 @@ class _ShelfCountPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: CatchLingoColors.mint.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+        border: Border.all(
+          color: CatchLingoColors.mint.withValues(alpha: 0.20),
+        ),
       ),
       child: Text(
-        '$count preview',
+        '$count caught words',
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
+          color: CatchLingoColors.mint,
           fontWeight: FontWeight.w900,
         ),
       ),
@@ -174,50 +354,33 @@ class _ShelfCountPill extends StatelessWidget {
   }
 }
 
-class _FilterPreview extends StatelessWidget {
-  const _FilterPreview();
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: const [
-        _FilterPill(label: 'All', isSelected: true),
-        _FilterPill(label: 'New'),
-        _FilterPill(label: 'Learning'),
-        _FilterPill(label: 'Known'),
-      ],
-    );
-  }
-}
-
-class _FilterPill extends StatelessWidget {
-  const _FilterPill({required this.label, this.isSelected = false});
+class _CategorySectionHeader extends StatelessWidget {
+  const _CategorySectionHeader({required this.label, required this.count});
 
   final String label;
-  final bool isSelected;
+  final int count;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? colorScheme.primary : Colors.white,
-        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
-        border: Border.all(
-          color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: CatchLingoColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
-          fontWeight: FontWeight.w800,
+        Text(
+          '$count ${count == 1 ? 'word' : 'words'}',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: CatchLingoColors.textMuted,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -225,131 +388,161 @@ class _FilterPill extends StatelessWidget {
 class _DictionaryWordCard extends StatelessWidget {
   const _DictionaryWordCard({required this.word});
 
-  final _DictionaryPreviewWord word;
+  final CatchWord word;
 
   @override
   Widget build(BuildContext context) {
+    final category = _categoryLabel(word.category);
+
     return Container(
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
+        color: CatchLingoColors.warmSurface,
         borderRadius: BorderRadius.circular(CatchLingoRadius.card),
-        border: Border.all(color: Colors.white),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F202338),
-            blurRadius: 20,
-            offset: Offset(0, 12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: CatchLingoColors.mint.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: CatchLingoColors.mint.withValues(alpha: 0.16),
+              ),
+            ),
+            child: const Icon(
+              Icons.check_circle_rounded,
+              color: CatchLingoColors.mint,
+            ),
+          ),
+          const SizedBox(width: CatchLingoSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        word.translation,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: CatchLingoColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: CatchLingoSpacing.sm),
+                    _StatusBadge(label: category),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  word.source,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: CatchLingoColors.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: CatchLingoSpacing.sm),
+                Wrap(
+                  spacing: CatchLingoSpacing.sm,
+                  runSpacing: CatchLingoSpacing.xs,
+                  children: [
+                    _MetadataChip(
+                      icon: Icons.visibility_rounded,
+                      label:
+                          'Seen ${word.seenCount <= 0 ? 1 : word.seenCount} ${(word.seenCount <= 1) ? 'time' : 'times'}',
+                    ),
+                    _MetadataChip(
+                      icon: Icons.schedule_rounded,
+                      label: _lastSeenLabel(word.lastSeenAt),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [word.color, Colors.white],
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.check_circle_rounded,
-                color: CatchLingoColors.successIcon,
-              ),
-            ),
-            const SizedBox(width: CatchLingoSpacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    word.target,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: CatchLingoColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.visibility_rounded,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
-                      const SizedBox(width: CatchLingoSpacing.xs),
-                      Text(
-                        word.source,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: CatchLingoColors.textMuted,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: CatchLingoSpacing.sm),
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      _StatusBadge(label: word.category),
-                      _StatusBadge(label: word.status, isStrong: true),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
+    );
+  }
+
+  String _lastSeenLabel(DateTime? lastSeenAt) {
+    if (lastSeenAt == null) {
+      return 'Last spotted recently';
+    }
+
+    final difference = DateTime.now().difference(lastSeenAt);
+
+    if (difference.inDays == 0) {
+      return 'Last spotted today';
+    }
+
+    if (difference.inDays == 1) {
+      return 'Last spotted yesterday';
+    }
+
+    return 'Last spotted ${difference.inDays} days ago';
+  }
+}
+
+class _MetadataChip extends StatelessWidget {
+  const _MetadataChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 15, color: CatchLingoColors.mint),
+        const SizedBox(width: 5),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: CatchLingoColors.textMuted,
+            fontWeight: FontWeight.w500,
+          ),
         ),
-      ),
+      ],
     );
   }
 }
 
 class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({required this.label, this.isStrong = false});
+  const _StatusBadge({required this.label});
 
   final String label;
-  final bool isStrong;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
-        color: isStrong
-            ? const Color(0xFFE5F7EF)
-            : colorScheme.surfaceContainerHighest,
+        color: CatchLingoColors.mint.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+        border: Border.all(
+          color: CatchLingoColors.mint.withValues(alpha: 0.16),
+        ),
       ),
       child: Text(
         label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: isStrong ? const Color(0xFF145C3F) : Colors.black54,
-          fontWeight: FontWeight.w800,
+          color: CatchLingoColors.mint,
+          fontWeight: FontWeight.w900,
         ),
       ),
     );
   }
-}
-
-class _DictionaryPreviewWord {
-  const _DictionaryPreviewWord({
-    required this.target,
-    required this.source,
-    required this.category,
-    required this.status,
-    required this.color,
-  });
-
-  final String target;
-  final String source;
-  final String category;
-  final String status;
-  final Color color;
 }
