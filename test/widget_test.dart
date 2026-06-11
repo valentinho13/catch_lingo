@@ -8,6 +8,18 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
+  Future<void> openDictionaryFromHome(WidgetTester tester) async {
+    final dictionaryButton = find.widgetWithText(
+      OutlinedButton,
+      'My Dictionary',
+    );
+    await tester.scrollUntilVisible(dictionaryButton, 160);
+    await tester.drag(find.byType(ListView), const Offset(0, -90));
+    await tester.pumpAndSettle();
+    await tester.tap(dictionaryButton);
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('shows the CatchLingo start screen', (tester) async {
     await tester.pumpWidget(const CatchLingoApp());
     await tester.pump();
@@ -91,9 +103,7 @@ void main() {
     // Back home, then into the dictionary.
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('My Dictionary'), 160);
-    await tester.tap(find.text('My Dictionary'));
-    await tester.pumpAndSettle();
+    await openDictionaryFromHome(tester);
 
     expect(find.text('1 word caught'), findsOneWidget);
     expect(find.text('kopi'), findsOneWidget);
@@ -113,9 +123,7 @@ void main() {
     await tester.pumpWidget(const CatchLingoApp());
     await tester.pump();
 
-    await tester.scrollUntilVisible(find.text('My Dictionary'), 160);
-    await tester.tap(find.text('My Dictionary'));
-    await tester.pumpAndSettle();
+    await openDictionaryFromHome(tester);
 
     expect(find.text('No words caught yet.'), findsOneWidget);
     expect(
