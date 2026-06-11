@@ -710,24 +710,6 @@ class _DictionaryWordCard extends StatelessWidget {
       ),
     );
   }
-
-  String _lastSeenLabel(DateTime? lastSeenAt) {
-    if (lastSeenAt == null) {
-      return 'Last spotted recently';
-    }
-
-    final difference = DateTime.now().difference(lastSeenAt);
-
-    if (difference.inDays == 0) {
-      return 'Last spotted today';
-    }
-
-    if (difference.inDays == 1) {
-      return 'Last spotted yesterday';
-    }
-
-    return 'Last spotted ${difference.inDays} days ago';
-  }
 }
 
 void _showWordDetail(BuildContext context, CatchWord word) {
@@ -736,6 +718,7 @@ void _showWordDetail(BuildContext context, CatchWord word) {
   showModalBottomSheet<void>(
     context: context,
     backgroundColor: CatchLingoColors.warmSurface,
+    isScrollControlled: true,
     showDragHandle: true,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(
@@ -744,85 +727,90 @@ void _showWordDetail(BuildContext context, CatchWord word) {
     ),
     builder: (sheetContext) {
       return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            CatchLingoSpacing.screen,
-            CatchLingoSpacing.sm,
-            CatchLingoSpacing.screen,
-            CatchLingoSpacing.screen,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _WordObjectBadge(word: word),
-                  const SizedBox(width: CatchLingoSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          word.source,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                color: CatchLingoColors.textPrimary,
-                                fontWeight: FontWeight.w800,
-                              ),
-                        ),
-                        Text(
-                          word.translation,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: CatchLingoColors.warmGreen,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ],
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              CatchLingoSpacing.screen,
+              CatchLingoSpacing.sm,
+              CatchLingoSpacing.screen,
+              CatchLingoSpacing.screen,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    _WordObjectBadge(word: word),
+                    const SizedBox(width: CatchLingoSpacing.md),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            word.source,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  color: CatchLingoColors.textPrimary,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                          Text(
+                            word.translation,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: CatchLingoColors.warmGreen,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: CatchLingoSpacing.lg),
-              _WordDetailFactRow(
-                icon: Icons.category_rounded,
-                label: 'Category',
-                value: category,
-              ),
-              _WordDetailFactRow(
-                icon: Icons.visibility_rounded,
-                label: 'Sightings',
-                value: _seenCountLabel(word.seenCount),
-              ),
-              _WordDetailFactRow(
-                icon: Icons.schedule_rounded,
-                label: 'Last seen',
-                value: _lastSeenLabel(word.lastSeenAt),
-              ),
-              const SizedBox(height: CatchLingoSpacing.lg),
-              FilledButton.icon(
-                onPressed: () {
-                  Navigator.of(sheetContext).pop();
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ReviewScreen(initialWordId: word.id),
-                    ),
-                  );
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: CatchLingoColors.warmGreen,
-                  foregroundColor: Colors.white,
-                  minimumSize: const Size.fromHeight(50),
+                  ],
                 ),
-                icon: const Icon(Icons.style_rounded),
-                label: const Text('Review this word'),
-              ),
-            ],
+                const SizedBox(height: CatchLingoSpacing.lg),
+                _WordDetailFactRow(
+                  icon: Icons.category_rounded,
+                  label: 'Category',
+                  value: category,
+                ),
+                _WordDetailFactRow(
+                  icon: Icons.visibility_rounded,
+                  label: 'Sightings',
+                  value: _seenCountLabel(word.seenCount),
+                ),
+                _WordDetailFactRow(
+                  icon: Icons.schedule_rounded,
+                  label: 'Last seen',
+                  value: _lastSeenLabel(word.lastSeenAt),
+                ),
+                const SizedBox(height: CatchLingoSpacing.lg),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(sheetContext).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ReviewScreen(initialWordId: word.id),
+                      ),
+                    );
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: CatchLingoColors.warmGreen,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size.fromHeight(50),
+                  ),
+                  icon: const Icon(Icons.style_rounded),
+                  label: const Text('Review this word'),
+                ),
+              ],
+            ),
           ),
         ),
       );

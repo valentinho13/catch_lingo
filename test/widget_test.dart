@@ -75,4 +75,32 @@ void main() {
     expect(find.text('kopi'), findsOneWidget);
     expect(find.text('English hidden'), findsOneWidget);
   });
+
+  testWidgets('opens dictionary word detail and starts review there', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({
+      'catch_lingo_caught_words': '''
+[{"id":"mobil","source":"car","translation":"mobil","category":"Travel","languageCode":"id","confidence":0.93,"markerX":0.0,"markerY":0.0,"caughtAt":"2026-06-01T09:00:00.000","seenCount":4,"lastSeenAt":"2026-06-01T09:00:00.000"}]
+''',
+    });
+
+    await tester.pumpWidget(const CatchLingoApp());
+
+    await tester.tap(find.text('Dictionary'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.textContaining('car', findRichText: true));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Sightings'), findsOneWidget);
+    expect(find.text('4 times'), findsOneWidget);
+    expect(find.text('Review this word'), findsOneWidget);
+
+    await tester.tap(find.text('Review this word'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Remember'), findsOneWidget);
+    expect(find.text('mobil'), findsOneWidget);
+  });
 }
