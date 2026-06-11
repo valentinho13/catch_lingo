@@ -115,10 +115,18 @@ class _HomeScreenState extends State<HomeScreen>
     });
   }
 
-  void _openDictionary() {
-    Navigator.of(
+  Future<void> _openDictionary() async {
+    await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const DictionaryScreen()));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _wordsFuture = _storage.loadWords();
+    });
   }
 
   void _showSettingsSheet() {
@@ -203,17 +211,25 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  void _openTab(CatchLingoTab tab) {
+  Future<void> _openTab(CatchLingoTab tab) async {
     switch (tab) {
       case CatchLingoTab.discover:
         break;
       case CatchLingoTab.dictionary:
-        _openDictionary();
+        await _openDictionary();
         break;
       case CatchLingoTab.review:
-        Navigator.of(
+        await Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const ReviewScreen()));
+
+        if (!mounted) {
+          return;
+        }
+
+        setState(() {
+          _wordsFuture = _storage.loadWords();
+        });
         break;
     }
   }
