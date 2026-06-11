@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../app/app_theme.dart';
+import '../data/mock_catch_words.dart';
+import '../models/catch_word.dart';
 import '../services/collection_store.dart';
 import 'dictionary_screen.dart';
 import 'explore_screen.dart';
+import 'review_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,7 +19,14 @@ class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   final CollectionStore _store = CollectionStore();
-  int _caughtCount = 0;
+  CollectionData _collection = const CollectionData.empty();
+
+  int get _caughtCount => _collection.caughtIds.length;
+
+  List<CatchWord> get _fadingWords => [
+    for (final word in allMockWords)
+      if (_collection.isCaught(word.id) && _collection.isFading(word.id)) word,
+  ];
 
   @override
   void initState() {
@@ -31,13 +41,11 @@ class _HomeScreenState extends State<HomeScreen>
   Future<void> _loadCollection() async {
     final data = await _store.load();
     if (!mounted) return;
-    setState(() => _caughtCount = data.caughtIds.length);
+    setState(() => _collection = data);
   }
 
   Future<void> _open(Widget screen) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => screen));
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
     _loadCollection();
   }
 
@@ -109,6 +117,18 @@ class _HomeScreenState extends State<HomeScreen>
                 end: 0.78,
                 child: _CollectionStatusCard(caughtCount: _caughtCount),
               ),
+              if (_fadingWords.isNotEmpty) ...[
+                const SizedBox(height: CatchLingoSpacing.md),
+                _HomeEntry(
+                  animation: _controller,
+                  begin: 0.34,
+                  end: 0.84,
+                  child: _ReviewRecommendationCard(
+                    words: _fadingWords,
+                    onReviewDone: _loadCollection,
+                  ),
+                ),
+              ],
               const SizedBox(height: CatchLingoSpacing.xl),
               _HomeEntry(
                 animation: _controller,
@@ -134,6 +154,83 @@ class _HomeScreenState extends State<HomeScreen>
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ReviewRecommendationCard extends StatelessWidget {
+  const _ReviewRecommendationCard({
+    required this.words,
+    required this.onReviewDone,
+  });
+
+  final List<CatchWord> words;
+  final VoidCallback onReviewDone;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = words.length;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: CatchLingoColors.amberSurface,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+        border: Border.all(
+          color: CatchLingoColors.amberAccent.withValues(alpha: 0.34),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.58),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Icon(
+              Icons.history_edu_rounded,
+              color: CatchLingoColors.amberText,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  count == 1
+                      ? 'One word is fading.'
+                      : '$count words are fading.',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: CatchLingoColors.amberText,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'A quick review can freshen them up.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: CatchLingoColors.amberText.withValues(alpha: 0.78),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Review fading words',
+            onPressed: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => ReviewScreen(words: words)),
+              );
+              onReviewDone();
+            },
+            icon: const Icon(Icons.style_rounded),
+            color: CatchLingoColors.amberText,
+          ),
+        ],
       ),
     );
   }

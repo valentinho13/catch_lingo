@@ -11,9 +11,9 @@ class CollectionData {
   });
 
   const CollectionData.empty()
-      : caughtIds = const {},
-        seenCounts = const {},
-        lastSeenAt = const {};
+    : caughtIds = const {},
+      seenCounts = const {},
+      lastSeenAt = const {};
 
   final Set<String> caughtIds;
   final Map<String, int> seenCounts;
@@ -21,6 +21,21 @@ class CollectionData {
 
   bool isCaught(String id) => caughtIds.contains(id);
   int seenCount(String id) => seenCounts[id] ?? 0;
+
+  int? daysSinceLastSeen(String id, {DateTime? now}) {
+    final lastSeen = lastSeenAt[id];
+    if (lastSeen == null) return null;
+
+    final reference = now ?? DateTime.now();
+    final today = DateTime(reference.year, reference.month, reference.day);
+    final seenDay = DateTime(lastSeen.year, lastSeen.month, lastSeen.day);
+    return today.difference(seenDay).inDays;
+  }
+
+  bool isFading(String id, {DateTime? now}) {
+    final days = daysSinceLastSeen(id, now: now);
+    return days != null && days >= 7;
+  }
 }
 
 /// Result of spotting a word in the world.

@@ -60,6 +60,27 @@ void main() {
     expect(data.lastSeenAt['cafe.cup'], later);
   });
 
+  test('marks words as fading after a week away', () async {
+    final store = CollectionStore();
+    final lastWeek = DateTime(2026, 6, 1, 9);
+    final today = DateTime(2026, 6, 8, 10);
+
+    await store.recordSpot('cafe.cup', now: lastWeek);
+    final data = await store.load();
+
+    expect(data.daysSinceLastSeen('cafe.cup', now: today), 7);
+    expect(data.isFading('cafe.cup', now: today), isTrue);
+  });
+
+  test('recent words are not fading', () async {
+    final store = CollectionStore();
+
+    await store.recordSpot('cafe.cup', now: DateTime(2026, 6, 7, 9));
+    final data = await store.load();
+
+    expect(data.isFading('cafe.cup', now: DateTime(2026, 6, 8, 10)), isFalse);
+  });
+
   test('tolerates corrupt stored values', () async {
     SharedPreferences.setMockInitialValues({
       'caughtIDs': ['cafe.coffee'],

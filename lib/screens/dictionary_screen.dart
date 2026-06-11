@@ -36,9 +36,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
   }
 
   List<CatchWord> get _caughtWords => [
-        for (final word in allMockWords)
-          if (_collection.isCaught(word.id)) word,
-      ];
+    for (final word in allMockWords)
+      if (_collection.isCaught(word.id)) word,
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -50,15 +50,15 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
         child: !_loaded
             ? const SizedBox.shrink()
             : caughtWords.isEmpty
-                ? ListView(
-                    padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-                    children: const [_DictionaryEmptyState()],
-                  )
-                : _DictionaryContent(
-                    words: caughtWords,
-                    collection: _collection,
-                    onReviewDone: _loadCollection,
-                  ),
+            ? ListView(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+                children: const [_DictionaryEmptyState()],
+              )
+            : _DictionaryContent(
+                words: caughtWords,
+                collection: _collection,
+                onReviewDone: _loadCollection,
+              ),
       ),
     );
   }
@@ -85,7 +85,7 @@ class _DictionaryContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
       children: [
-        _JournalSummaryCard(caughtCount: words.length),
+        _JournalSummaryCard(caughtCount: words.length, collection: collection),
         const SizedBox(height: CatchLingoSpacing.lg),
         FilledButton.tonalIcon(
           onPressed: () async {
@@ -113,14 +113,22 @@ class _DictionaryContent extends StatelessWidget {
 }
 
 class _JournalSummaryCard extends StatelessWidget {
-  const _JournalSummaryCard({required this.caughtCount});
+  const _JournalSummaryCard({
+    required this.caughtCount,
+    required this.collection,
+  });
 
   final int caughtCount;
+  final CollectionData collection;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final total = allMockWords.length;
+    final fadingCount = allMockWords
+        .where((word) => collection.isCaught(word.id))
+        .where((word) => collection.isFading(word.id))
+        .length;
 
     return Container(
       padding: const EdgeInsets.all(CatchLingoSpacing.lg),
@@ -163,8 +171,10 @@ class _JournalSummaryCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  caughtCount >= total
-                      ? 'You caught every word out there — for now.'
+                  fadingCount > 0
+                      ? '$fadingCount ${fadingCount == 1 ? 'word is' : 'words are'} fading gently.'
+                      : caughtCount >= total
+                      ? 'You caught every word out there - for now.'
                       : '${total - caughtCount} more waiting in the scenes.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: CatchLingoColors.textMuted,
@@ -198,9 +208,9 @@ class _CategoryHeader extends StatelessWidget {
         Expanded(
           child: Text(
             category,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w900,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
           ),
         ),
         Text(
@@ -302,76 +312,102 @@ class _DictionaryWordCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final seenCount = collection.seenCount(word.id);
     final lastSeen = collection.lastSeenAt[word.id];
+    final isFading = collection.isFading(word.id);
 
     return GestureDetector(
-      onTap: () => _showDetail(context, seenCount, lastSeen),
+      onTap: () => _showDetail(context, seenCount, lastSeen, isFading),
       child: Container(
-      decoration: BoxDecoration(
-        color: CatchLingoColors.card,
-        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
-        border: Border.all(color: Colors.white),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12443C28),
-            blurRadius: 20,
-            offset: Offset(0, 12),
+        decoration: BoxDecoration(
+          color: isFading
+              ? CatchLingoColors.amberSurface
+              : CatchLingoColors.card,
+          borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+          border: Border.all(
+            color: isFading
+                ? CatchLingoColors.amberAccent.withValues(alpha: 0.38)
+                : Colors.white,
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          children: [
-            Container(
-              width: 58,
-              height: 58,
-              decoration: BoxDecoration(
-                color: CatchLingoColors.successSurface,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(
-                markerIconFor(word),
-                color: CatchLingoColors.successIcon,
-              ),
-            ),
-            const SizedBox(width: CatchLingoSpacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    word.translation,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: CatchLingoColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    word.source,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: CatchLingoColors.textMuted,
-                    ),
-                  ),
-                  const SizedBox(height: CatchLingoSpacing.sm),
-                  Text(
-                    _spotInfo(seenCount, lastSeen),
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: CatchLingoColors.textMuted,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x12443C28),
+              blurRadius: 20,
+              offset: Offset(0, 12),
             ),
           ],
         ),
-      ),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: isFading
+                      ? Colors.white.withValues(alpha: 0.62)
+                      : CatchLingoColors.successSurface,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  markerIconFor(word),
+                  color: isFading
+                      ? CatchLingoColors.amberText
+                      : CatchLingoColors.successIcon,
+                ),
+              ),
+              const SizedBox(width: CatchLingoSpacing.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            word.translation,
+                            style: Theme.of(context).textTheme.headlineSmall
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: CatchLingoColors.textPrimary,
+                                ),
+                          ),
+                        ),
+                        if (isFading) const _FadingTag(),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      word.source,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: CatchLingoColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: CatchLingoSpacing.sm),
+                    Text(
+                      _spotInfo(seenCount, lastSeen),
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: isFading
+                            ? CatchLingoColors.amberText
+                            : CatchLingoColors.textMuted,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  void _showDetail(BuildContext context, int seenCount, DateTime? lastSeen) {
+  void _showDetail(
+    BuildContext context,
+    int seenCount,
+    DateTime? lastSeen,
+    bool isFading,
+  ) {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: CatchLingoColors.card,
@@ -394,12 +430,16 @@ class _DictionaryWordCard extends StatelessWidget {
                       width: 58,
                       height: 58,
                       decoration: BoxDecoration(
-                        color: CatchLingoColors.successSurface,
+                        color: isFading
+                            ? CatchLingoColors.amberSurface
+                            : CatchLingoColors.successSurface,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Icon(
                         markerIconFor(word),
-                        color: CatchLingoColors.successIcon,
+                        color: isFading
+                            ? CatchLingoColors.amberText
+                            : CatchLingoColors.successIcon,
                       ),
                     ),
                     const SizedBox(width: CatchLingoSpacing.lg),
@@ -409,9 +449,7 @@ class _DictionaryWordCard extends StatelessWidget {
                         children: [
                           Text(
                             word.translation,
-                            style: Theme.of(context)
-                                .textTheme
-                                .headlineMedium
+                            style: Theme.of(context).textTheme.headlineMedium
                                 ?.copyWith(
                                   fontWeight: FontWeight.w900,
                                   color: CatchLingoColors.textPrimary,
@@ -419,9 +457,7 @@ class _DictionaryWordCard extends StatelessWidget {
                           ),
                           Text(
                             word.source,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
+                            style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(color: CatchLingoColors.textMuted),
                           ),
                         ],
@@ -439,17 +475,40 @@ class _DictionaryWordCard extends StatelessWidget {
                       label: word.category,
                     ),
                     _DetailPill(
+                      icon: Icons.history_rounded,
+                      label: lastSeen == null
+                          ? 'Last seen unknown'
+                          : 'Last seen ${relativeDayLabel(lastSeen)}',
+                    ),
+                    _DetailPill(
                       icon: Icons.visibility_rounded,
-                      label: _spotInfo(seenCount, lastSeen),
+                      label: seenCount <= 1
+                          ? 'Seen once'
+                          : 'Seen $seenCount times',
                     ),
                   ],
                 ),
                 const SizedBox(height: CatchLingoSpacing.lg),
                 Text(
-                  'Keep spotting it to make it stick.',
+                  isFading
+                      ? 'This word is fading a little. A quick review can freshen it up.'
+                      : 'Keep spotting it to make it stick.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: CatchLingoColors.textMuted,
                   ),
+                ),
+                const SizedBox(height: CatchLingoSpacing.lg),
+                FilledButton.tonalIcon(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ReviewScreen(words: [word]),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.style_rounded),
+                  label: const Text('Review this word'),
                 ),
               ],
             ),
@@ -460,9 +519,31 @@ class _DictionaryWordCard extends StatelessWidget {
   }
 
   String _spotInfo(int seenCount, DateTime? lastSeen) {
-    final times = seenCount <= 1 ? 'once' : '$seenCount×';
+    final times = seenCount <= 1 ? 'once' : '${seenCount}x';
     if (lastSeen == null) return 'Spotted $times';
-    return 'Spotted $times · ${relativeDayLabel(lastSeen)}';
+    return 'Spotted $times - ${relativeDayLabel(lastSeen)}';
+  }
+}
+
+class _FadingTag extends StatelessWidget {
+  const _FadingTag();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.62),
+        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+      ),
+      child: Text(
+        'fading',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: CatchLingoColors.amberText,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
   }
 }
 
@@ -498,7 +579,6 @@ class _DetailPill extends StatelessWidget {
   }
 }
 
-/// Short, friendly relative day label for journal entries.
 String relativeDayLabel(DateTime time, {DateTime? now}) {
   final reference = now ?? DateTime.now();
   final today = DateTime(reference.year, reference.month, reference.day);
