@@ -78,6 +78,31 @@ class _HomeScreenState extends State<HomeScreen>
                 },
               ),
             ),
+            FutureBuilder<List<CatchWord>>(
+              future: _wordsFuture,
+              builder: (context, snapshot) {
+                final words = snapshot.data ?? [];
+
+                if (words.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                return Column(
+                  children: [
+                    const SizedBox(height: CatchLingoSpacing.lg),
+                    _HomeEntry(
+                      animation: _controller,
+                      begin: 0.48,
+                      end: 0.94,
+                      child: _HomeReviewRecommendation(
+                        words: words,
+                        onReview: _openReview,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
             const SizedBox(height: CatchLingoSpacing.xl),
             _HomeEntry(
               animation: _controller,
@@ -119,6 +144,20 @@ class _HomeScreenState extends State<HomeScreen>
     await Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const DictionaryScreen()));
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _wordsFuture = _storage.loadWords();
+    });
+  }
+
+  Future<void> _openReview() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ReviewScreen()));
 
     if (!mounted) {
       return;
@@ -219,17 +258,7 @@ class _HomeScreenState extends State<HomeScreen>
         await _openDictionary();
         break;
       case CatchLingoTab.review:
-        await Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const ReviewScreen()));
-
-        if (!mounted) {
-          return;
-        }
-
-        setState(() {
-          _wordsFuture = _storage.loadWords();
-        });
+        await _openReview();
         break;
     }
   }
@@ -527,6 +556,129 @@ class _StatCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _HomeReviewRecommendation extends StatelessWidget {
+  const _HomeReviewRecommendation({
+    required this.words,
+    required this.onReview,
+  });
+
+  final List<CatchWord> words;
+  final VoidCallback onReview;
+
+  @override
+  Widget build(BuildContext context) {
+    final oldestWord = _oldestSeenWord(words);
+    final fadingCount = words.where(_isFadingWord).length;
+    final title = fadingCount > 0
+        ? '$fadingCount ${fadingCount == 1 ? 'word feels' : 'words feel'} a little faded'
+        : 'A quick remember pass is ready';
+    final subtitle = oldestWord == null
+        ? 'Review caught words when you have a quiet moment.'
+        : '${oldestWord.translation} was last spotted ${_lastSeenShort(oldestWord.lastSeenAt)}.';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onReview,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+        child: Ink(
+          padding: const EdgeInsets.all(CatchLingoSpacing.md),
+          decoration: BoxDecoration(
+            color: CatchLingoColors.warmSurface,
+            borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+            border: Border.all(
+              color: CatchLingoColors.amber.withValues(alpha: 0.14),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: CatchLingoColors.amber.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.history_edu_rounded,
+                  color: CatchLingoColors.warmGreen,
+                ),
+              ),
+              const SizedBox(width: CatchLingoSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: CatchLingoColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: CatchLingoColors.textMuted,
+                        fontWeight: FontWeight.w600,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: CatchLingoSpacing.sm),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                color: CatchLingoColors.warmGreen,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+CatchWord? _oldestSeenWord(List<CatchWord> words) {
+  final seenWords = words.where((word) => word.lastSeenAt != null).toList();
+  if (seenWords.isEmpty) {
+    return words.isEmpty ? null : words.first;
+  }
+
+  seenWords.sort((a, b) => a.lastSeenAt!.compareTo(b.lastSeenAt!));
+  return seenWords.first;
+}
+
+bool _isFadingWord(CatchWord word) {
+  final lastSeenAt = word.lastSeenAt;
+  if (lastSeenAt == null) {
+    return false;
+  }
+
+  return DateTime.now().difference(lastSeenAt).inDays >= 7;
+}
+
+String _lastSeenShort(DateTime? lastSeenAt) {
+  if (lastSeenAt == null) {
+    return 'recently';
+  }
+
+  final days = DateTime.now().difference(lastSeenAt).inDays;
+  if (days == 0) {
+    return 'today';
+  }
+  if (days == 1) {
+    return 'yesterday';
+  }
+  return '$days days ago';
 }
 
 class _HomeCategories extends StatelessWidget {
