@@ -25,6 +25,8 @@ Current polish commits on top of the recovery:
 - `5b11cdc handle camera preview lifecycle`
 - `132a496 improve session summary counts`
 - `76bc591 show summary when ending explore session`
+- `44b4354 connect session summary to review`
+- `40c6201 add natural review completion`
 
 Do not roll back past `4451fa4` unless the user explicitly asks.
 
@@ -154,7 +156,7 @@ Work in small commits.
 Good next steps:
 
 - Test the latest APK on a real Android device, especially camera pause/resume,
-  ending Explore early, and Dictionary -> Review.
+  ending Explore early, Session Summary -> Review, and Dictionary -> Review.
 - Keep catch animation performant and warm.
 - Add tests around Explore summary behavior if the widget harness can cover it
   without depending on camera hardware.
@@ -176,5 +178,5 @@ Get-Item build\app\outputs\flutter-apk\app-debug.apk
 As of this handoff:
 
 - `flutter analyze` passes
-- `flutter test` passes with 10 tests
+- `flutter test` passes with 11 tests
 - `flutter build apk --debug` passes
