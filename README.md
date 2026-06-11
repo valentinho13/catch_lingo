@@ -149,3 +149,11 @@ Later:
 - The app should feel visual.
 - The app should feel like real-world vocabulary, not a school worksheet.
 
+## Key Documents
+
+- `VISION.md` describes the product vision.
+- `UI_SPEC.md` describes the intended UI and interaction model.
+- `DESIGN_SYSTEM.md` describes the design principles, visual language, components, and motion behavior.
+- `TECHNICAL_DECISIONS.md` describes MVP sequencing and technical constraints.
+- `ROADMAP.md` describes the high-level phased development.
+- `AGENTS.md` gives coding agents project-specific guidance.
