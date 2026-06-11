@@ -29,4 +29,40 @@ void main() {
     expect(prefs.getString('seenCount'), contains('"mobil":1'));
     expect(prefs.getString('lastSeenAt'), contains('2026-06-12T09:00:00.000'));
   });
+
+  test(
+    'loads words from stable preference keys when rich storage is missing',
+    () async {
+      SharedPreferences.setMockInitialValues({
+        'caughtIDs': ['mobil'],
+        'seenCount': '{"mobil":3}',
+        'lastSeenAt': '{"mobil":"2026-06-12T09:00:00.000"}',
+      });
+
+      const storage = CaughtWordStorage();
+      final words = await storage.loadWords();
+
+      expect(words, hasLength(1));
+      expect(words.single.id, 'mobil');
+      expect(words.single.source, 'car');
+      expect(words.single.translation, 'mobil');
+      expect(words.single.seenCount, 3);
+      expect(words.single.lastSeenAt, DateTime(2026, 6, 12, 9));
+    },
+  );
+
+  test('falls back to stable keys when rich storage is corrupt', () async {
+    SharedPreferences.setMockInitialValues({
+      'catch_lingo_caught_words': 'not json {{{',
+      'caughtIDs': ['mobil'],
+      'seenCount': '{"mobil":2}',
+    });
+
+    const storage = CaughtWordStorage();
+    final words = await storage.loadWords();
+
+    expect(words, hasLength(1));
+    expect(words.single.id, 'mobil');
+    expect(words.single.seenCount, 2);
+  });
 }

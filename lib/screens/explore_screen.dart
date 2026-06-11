@@ -248,6 +248,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               isScanning: _isScanning,
               cameraController: _cameraController,
               cameraMessage: _cameraMessage,
+              onRetryCamera: _startCamera,
             ),
           ),
           SafeArea(
@@ -465,6 +466,7 @@ class _FullscreenDiscoveryLayer extends StatelessWidget {
     required this.isScanning,
     required this.cameraController,
     required this.cameraMessage,
+    required this.onRetryCamera,
   });
 
   final List<CatchWord> words;
@@ -473,6 +475,7 @@ class _FullscreenDiscoveryLayer extends StatelessWidget {
   final bool isScanning;
   final CameraController? cameraController;
   final String? cameraMessage;
+  final VoidCallback onRetryCamera;
 
   @override
   Widget build(BuildContext context) {
@@ -521,7 +524,10 @@ class _FullscreenDiscoveryLayer extends StatelessWidget {
             left: CatchLingoSpacing.lg,
             right: CatchLingoSpacing.lg,
             bottom: CatchLingoSpacing.lg,
-            child: _CameraMessage(message: cameraMessage!),
+            child: _CameraMessage(
+              message: cameraMessage!,
+              onRetry: onRetryCamera,
+            ),
           ),
         for (final word in words.where(
           (word) => activeDetection?.id == word.id,
@@ -580,9 +586,10 @@ class _CameraScenePreview extends StatelessWidget {
 }
 
 class _CameraMessage extends StatelessWidget {
-  const _CameraMessage({required this.message});
+  const _CameraMessage({required this.message, required this.onRetry});
 
   final String message;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -611,6 +618,15 @@ class _CameraMessage extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ),
+          const SizedBox(width: CatchLingoSpacing.sm),
+          TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(
+              foregroundColor: CatchLingoColors.warmGreen,
+              textStyle: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            child: const Text('Try again'),
           ),
         ],
       ),
