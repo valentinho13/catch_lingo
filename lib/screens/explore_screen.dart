@@ -33,7 +33,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
   bool _justCaughtIsDuplicate = false;
   bool _sessionComplete = false;
   String? _cameraMessage;
+  bool _isCameraStarting = true;
   bool _isScanning = true;
+  int _sessionKnownSeen = 0;
 
   @override
   void initState() {
@@ -79,6 +81,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Future<void> _startCamera() async {
+    setState(() {
+      _isCameraStarting = true;
+      _cameraMessage = null;
+    });
+
     try {
       final cameras = await availableCameras();
 
@@ -108,6 +115,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       setState(() {
         _cameraController = controller;
         _cameraMessage = null;
+        _isCameraStarting = false;
       });
     } on CameraException catch (error) {
       _setCameraMessage(_messageForCameraException(error));
@@ -123,6 +131,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
     setState(() {
       _cameraMessage = message;
+      _isCameraStarting = false;
     });
   }
 
@@ -131,7 +140,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       'CameraAccessDenied' ||
       'CameraAccessDeniedWithoutPrompt' ||
       'CameraAccessRestricted' =>
-        'Camera access is blocked. Enable it in system settings.',
+        'Camera access is blocked. Allow camera access, then try again.',
       _ => 'Camera is not available. Showing preview scene.',
     };
   }
@@ -165,6 +174,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       setState(() {
         _justCaught = reinforcedWord ?? word;
         _justCaughtIsDuplicate = true;
+        _sessionKnownSeen += 1;
         _activeDetection = null;
         _isScanning = false;
       });
@@ -229,6 +239,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     setState(() {
       _sessionComplete = false;
       _sessionCaught.clear();
+      _sessionKnownSeen = 0;
     });
 
     _scheduleNextDetection();
@@ -248,6 +259,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               isScanning: _isScanning,
               cameraController: _cameraController,
               cameraMessage: _cameraMessage,
+              isCameraStarting: _isCameraStarting,
               onRetryCamera: _startCamera,
             ),
           ),
@@ -266,7 +278,18 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     children: [
                       Align(
                         alignment: Alignment.topCenter,
-                        child: _ExploreTopBar(count: _collectedWords.length),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _ExploreTopBar(count: _collectedWords.length),
+                            const SizedBox(height: CatchLingoSpacing.sm),
+                            _SessionProgressStrip(
+                              caught: _sessionCaught.length,
+                              knownSeen: _sessionKnownSeen,
+                              goal: _sessionGoal,
+                            ),
+                          ],
+                        ),
                       ),
                       Positioned(
                         left: isLandscape
@@ -458,6 +481,73 @@ class _TinyCollectionPillState extends State<_TinyCollectionPill>
   }
 }
 
+class _SessionProgressStrip extends StatelessWidget {
+  const _SessionProgressStrip({
+    required this.caught,
+    required this.knownSeen,
+    required this.goal,
+  });
+
+  final int caught;
+  final int knownSeen;
+  final int goal;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = goal == 0 ? 0.0 : (caught / goal).clamp(0.0, 1.0);
+
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 320),
+      padding: const EdgeInsets.symmetric(
+        horizontal: CatchLingoSpacing.md,
+        vertical: CatchLingoSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.38)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 5,
+                backgroundColor: CatchLingoColors.textPrimary.withValues(
+                  alpha: 0.08,
+                ),
+                valueColor: const AlwaysStoppedAnimation(
+                  CatchLingoColors.warmGreen,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: CatchLingoSpacing.sm),
+          Text(
+            '$caught/$goal new',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: CatchLingoColors.warmGreen,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          if (knownSeen > 0) ...[
+            const SizedBox(width: CatchLingoSpacing.sm),
+            Text(
+              '$knownSeen seen again',
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: CatchLingoColors.textMuted,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _FullscreenDiscoveryLayer extends StatelessWidget {
   const _FullscreenDiscoveryLayer({
     required this.words,
@@ -466,6 +556,7 @@ class _FullscreenDiscoveryLayer extends StatelessWidget {
     required this.isScanning,
     required this.cameraController,
     required this.cameraMessage,
+    required this.isCameraStarting,
     required this.onRetryCamera,
   });
 
@@ -475,6 +566,7 @@ class _FullscreenDiscoveryLayer extends StatelessWidget {
   final bool isScanning;
   final CameraController? cameraController;
   final String? cameraMessage;
+  final bool isCameraStarting;
   final VoidCallback onRetryCamera;
 
   @override
@@ -504,6 +596,7 @@ class _FullscreenDiscoveryLayer extends StatelessWidget {
             ),
             child: _SceneTableSurface(),
           ),
+        if (!hasCamera && isCameraStarting) const _CameraWarmLoading(),
         // Subtle warm edge vignette — lets the world breathe
         DecoratedBox(
           decoration: BoxDecoration(
@@ -538,6 +631,116 @@ class _FullscreenDiscoveryLayer extends StatelessWidget {
             isKnown: collectedWords.contains(word.id),
           ),
       ],
+    );
+  }
+}
+
+class _CameraWarmLoading extends StatelessWidget {
+  const _CameraWarmLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 228,
+        padding: const EdgeInsets.all(CatchLingoSpacing.lg),
+        decoration: BoxDecoration(
+          color: CatchLingoColors.warmSurface.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.12),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const _CameraLoadingGlyph(),
+            const SizedBox(height: CatchLingoSpacing.md),
+            Text(
+              'Opening your field view',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: CatchLingoColors.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: CatchLingoSpacing.xs),
+            Text(
+              'Getting ready to spot words around you.',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: CatchLingoColors.textMuted,
+                fontWeight: FontWeight.w600,
+                height: 1.25,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CameraLoadingGlyph extends StatefulWidget {
+  const _CameraLoadingGlyph();
+
+  @override
+  State<_CameraLoadingGlyph> createState() => _CameraLoadingGlyphState();
+}
+
+class _CameraLoadingGlyphState extends State<_CameraLoadingGlyph>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final pulse = Curves.easeInOut.transform(_controller.value);
+
+        return Container(
+          width: 62,
+          height: 62,
+          decoration: BoxDecoration(
+            color: CatchLingoColors.amber.withValues(
+              alpha: 0.12 + pulse * 0.08,
+            ),
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: CatchLingoColors.amber.withValues(
+                alpha: 0.18 + pulse * 0.12,
+              ),
+            ),
+          ),
+          child: Icon(
+            Icons.photo_camera_rounded,
+            color: CatchLingoColors.warmGreen.withValues(
+              alpha: 0.72 + pulse * 0.22,
+            ),
+            size: 30,
+          ),
+        );
+      },
     );
   }
 }
@@ -594,39 +797,68 @@ class _CameraMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: CatchLingoSpacing.md,
-        vertical: CatchLingoSpacing.sm,
-      ),
+      padding: const EdgeInsets.all(CatchLingoSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.90),
-        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+        color: CatchLingoColors.warmSurface.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.16),
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+          ),
+        ],
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.videocam_off_rounded,
-            size: 18,
-            color: CatchLingoColors.warmGreen,
-          ),
-          const SizedBox(width: CatchLingoSpacing.sm),
-          Expanded(
-            child: Text(
-              message,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: CatchLingoColors.textMuted,
-                fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: CatchLingoColors.amber.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.photo_camera_back_rounded,
+                  size: 20,
+                  color: CatchLingoColors.warmGreen,
+                ),
               ),
+              const SizedBox(width: CatchLingoSpacing.sm),
+              Expanded(
+                child: Text(
+                  'Camera needs a quick check',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: CatchLingoColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: CatchLingoSpacing.sm),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: CatchLingoColors.textMuted,
+              fontWeight: FontWeight.w600,
+              height: 1.25,
             ),
           ),
-          const SizedBox(width: CatchLingoSpacing.sm),
-          TextButton(
+          const SizedBox(height: CatchLingoSpacing.md),
+          FilledButton.icon(
             onPressed: onRetry,
-            style: TextButton.styleFrom(
-              foregroundColor: CatchLingoColors.warmGreen,
-              textStyle: const TextStyle(fontWeight: FontWeight.w800),
+            style: FilledButton.styleFrom(
+              backgroundColor: CatchLingoColors.warmGreen,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(44),
             ),
-            child: const Text('Try again'),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Try camera again'),
           ),
         ],
       ),
