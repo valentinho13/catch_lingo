@@ -28,10 +28,10 @@ Findings oder Test-Fehler zuerst fixen, bevor neue Features entstehen.
 
 ## Danach, in dieser Reihenfolge
 
-1. **Wort-Detail-Bottom-Sheet im Dictionary** — Wort (Indonesisch groß),
-   Bedeutung, Kategorie, Spot-Infos. Schlicht halten (UI_SPEC §5).
-2. **App-Icon / Branding** — Katze + AR-Ecken, warm, nicht kindisch.
-3. **Catch-Moment weiter polieren** — nur subtile, performante Effekte.
+1. **App-Icon / Branding** — Katze + AR-Ecken, warm, nicht kindisch.
+2. **Catch-Moment weiter polieren** — nur subtile, performante Effekte.
+
+(Das Wort-Detail-Bottom-Sheet im Dictionary ist bereits umgesetzt.)
 
 Nicht bauen: Kamera, ML Kit, Cloud, Accounts, Spaced Repetition, Bottom-Nav.
 

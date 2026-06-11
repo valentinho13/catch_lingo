@@ -29,6 +29,7 @@ All notable changes to CatchLingo.
 - Words grouped by category with icons; each card shows the Indonesian word first, plus spotted count and last-seen day.
 - Journal summary card ("X words caught · Y more waiting in the scenes").
 - Honest empty state shown only when the collection is actually empty.
+- Tapping a word opens a simple detail bottom sheet (word, meaning, category, spot info).
 
 ### Session summary (new)
 

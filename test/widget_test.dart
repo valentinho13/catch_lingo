@@ -100,6 +100,13 @@ void main() {
     expect(find.text('coffee'), findsOneWidget);
     expect(find.text('Review your words'), findsOneWidget);
     expect(find.textContaining('Spotted once'), findsOneWidget);
+
+    // Word detail bottom sheet.
+    await tester.tap(find.text('kopi'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Keep spotting it to make it stick.'), findsOneWidget);
+    expect(find.textContaining('Spotted once'), findsWidgets);
   });
 
   testWidgets('empty dictionary encourages exploring', (tester) async {

@@ -303,7 +303,9 @@ class _DictionaryWordCard extends StatelessWidget {
     final seenCount = collection.seenCount(word.id);
     final lastSeen = collection.lastSeenAt[word.id];
 
-    return Container(
+    return GestureDetector(
+      onTap: () => _showDetail(context, seenCount, lastSeen),
+      child: Container(
       decoration: BoxDecoration(
         color: CatchLingoColors.card,
         borderRadius: BorderRadius.circular(CatchLingoRadius.card),
@@ -365,6 +367,95 @@ class _DictionaryWordCard extends StatelessWidget {
           ],
         ),
       ),
+      ),
+    );
+  }
+
+  void _showDetail(BuildContext context, int seenCount, DateTime? lastSeen) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: CatchLingoColors.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(CatchLingoRadius.panel),
+        ),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(CatchLingoSpacing.xl),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 58,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: CatchLingoColors.successSurface,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Icon(
+                        markerIconFor(word),
+                        color: CatchLingoColors.successIcon,
+                      ),
+                    ),
+                    const SizedBox(width: CatchLingoSpacing.lg),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            word.translation,
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                  color: CatchLingoColors.textPrimary,
+                                ),
+                          ),
+                          Text(
+                            word.source,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(color: CatchLingoColors.textMuted),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: CatchLingoSpacing.lg),
+                Wrap(
+                  spacing: CatchLingoSpacing.sm,
+                  runSpacing: CatchLingoSpacing.sm,
+                  children: [
+                    _DetailPill(
+                      icon: categoryIconFor(word.category),
+                      label: word.category,
+                    ),
+                    _DetailPill(
+                      icon: Icons.visibility_rounded,
+                      label: _spotInfo(seenCount, lastSeen),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: CatchLingoSpacing.lg),
+                Text(
+                  'Keep spotting it to make it stick.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: CatchLingoColors.textMuted,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -372,6 +463,38 @@ class _DictionaryWordCard extends StatelessWidget {
     final times = seenCount <= 1 ? 'once' : '$seenCount×';
     if (lastSeen == null) return 'Spotted $times';
     return 'Spotted $times · ${relativeDayLabel(lastSeen)}';
+  }
+}
+
+class _DetailPill extends StatelessWidget {
+  const _DetailPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: CatchLingoColors.discoverySurface,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: CatchLingoSpacing.sm),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: CatchLingoColors.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
