@@ -386,6 +386,7 @@ class _ExploreScreenState extends State<ExploreScreen>
             Positioned.fill(
               child: _SessionCompleteOverlay(
                 words: _sessionCaught,
+                knownSeen: _sessionKnownSeen,
                 onContinue: _continueAfterSession,
                 onExit: () => Navigator.of(context).pop(),
               ),
@@ -1750,11 +1751,13 @@ class _CatchRevealCard extends StatelessWidget {
 class _SessionCompleteOverlay extends StatelessWidget {
   const _SessionCompleteOverlay({
     required this.words,
+    required this.knownSeen,
     required this.onContinue,
     required this.onExit,
   });
 
   final List<CatchWord> words;
+  final int knownSeen;
   final VoidCallback onContinue;
   final VoidCallback onExit;
 
@@ -1811,11 +1814,35 @@ class _SessionCompleteOverlay extends StatelessWidget {
                 ),
                 const SizedBox(height: CatchLingoSpacing.xs),
                 Text(
-                  'You caught ${words.length} words from this moment.',
+                  knownSeen == 0
+                      ? 'You caught ${words.length} words from this moment.'
+                      : 'You caught ${words.length} new words and spotted $knownSeen you already knew.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: CatchLingoColors.textMuted,
                     fontWeight: FontWeight.w500,
                   ),
+                ),
+                const SizedBox(height: CatchLingoSpacing.lg),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _SessionSummaryStat(
+                        value: words.length.toString(),
+                        label: 'new caught',
+                        icon: Icons.add_rounded,
+                        color: CatchLingoColors.warmGreen,
+                      ),
+                    ),
+                    const SizedBox(width: CatchLingoSpacing.sm),
+                    Expanded(
+                      child: _SessionSummaryStat(
+                        value: knownSeen.toString(),
+                        label: 'seen again',
+                        icon: Icons.visibility_rounded,
+                        color: CatchLingoColors.amber,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: CatchLingoSpacing.lg),
                 ...words.map(
@@ -1883,6 +1910,66 @@ class _SessionCompleteOverlay extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SessionSummaryStat extends StatelessWidget {
+  const _SessionSummaryStat({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
+
+  final String value;
+  final String label;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: CatchLingoSpacing.md,
+        vertical: CatchLingoSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: CatchLingoSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: CatchLingoColors.textPrimary,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                  ),
+                ),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: CatchLingoColors.textMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
