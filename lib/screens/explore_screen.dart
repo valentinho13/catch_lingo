@@ -23,6 +23,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   final List<CatchWord> _sessionNewWords = [];
   final List<CatchWord> _sessionSeenAgainWords = [];
   _LatestSpot? _latestSpot;
+  bool _loaded = false;
 
   MockScene get _scene => mockScenes[_sceneIndex];
 
@@ -43,7 +44,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Future<void> _loadCollection() async {
     final data = await _store.load();
     if (!mounted) return;
-    setState(() => _collection = data);
+    setState(() {
+      _collection = data;
+      _loaded = true;
+    });
   }
 
   Future<void> _spotWord(CatchWord word) async {
@@ -90,69 +94,133 @@ class _ExploreScreenState extends State<ExploreScreen> {
           Padding(
             padding: const EdgeInsets.only(right: CatchLingoSpacing.lg),
             child: Center(
-              child: CollectionCounter(count: _sessionCatchCount, compact: true),
+              child: CollectionCounter(
+                count: _sessionCatchCount,
+                compact: true,
+              ),
             ),
           ),
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(
-            CatchLingoSpacing.screen,
-            CatchLingoSpacing.sm,
-            CatchLingoSpacing.screen,
-            CatchLingoSpacing.screen,
-          ),
-          children: [
-            Text(
-              'Discovery preview',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: CatchLingoColors.textMuted,
-              ),
-            ),
-            const SizedBox(height: CatchLingoSpacing.xs),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Text(
-                    _scene.name,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
+        child: !_loaded
+            ? const _WarmExploreLoading()
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  CatchLingoSpacing.screen,
+                  CatchLingoSpacing.sm,
+                  CatchLingoSpacing.screen,
+                  CatchLingoSpacing.screen,
+                ),
+                children: [
+                  Text(
+                    'Discovery preview',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: CatchLingoColors.textMuted,
                     ),
                   ),
-                ),
-                _NextSceneButton(onTap: _nextScene),
-              ],
-            ),
-            const SizedBox(height: CatchLingoSpacing.md),
-            AnimatedSwitcher(
-              duration: CatchLingoMotion.reveal,
-              switchInCurve: Curves.easeOutCubic,
-              child: _SceneDiscoveryPanel(
-                key: ValueKey('scene-$_sceneIndex'),
-                words: _scene.words,
-                collection: _collection,
-                onSpot: _spotWord,
+                  const SizedBox(height: CatchLingoSpacing.xs),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _scene.name,
+                          style: Theme.of(context).textTheme.headlineMedium
+                              ?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                      _NextSceneButton(onTap: _nextScene),
+                    ],
+                  ),
+                  const SizedBox(height: CatchLingoSpacing.md),
+                  AnimatedSwitcher(
+                    duration: CatchLingoMotion.reveal,
+                    switchInCurve: Curves.easeOutCubic,
+                    child: _SceneDiscoveryPanel(
+                      key: ValueKey('scene-$_sceneIndex'),
+                      words: _scene.words,
+                      collection: _collection,
+                      onSpot: _spotWord,
+                    ),
+                  ),
+                  const SizedBox(height: CatchLingoSpacing.lg),
+                  _SessionProgressCard(
+                    newCount: _sessionNewWords.length,
+                    seenAgainCount: _sessionSeenAgainWords.length,
+                  ),
+                  const SizedBox(height: CatchLingoSpacing.md),
+                  _LatestDiscoveryPanel(
+                    spot: _latestSpot,
+                    sceneComplete: _sceneComplete,
+                    onNextScene: _nextScene,
+                  ),
+                  if (_hasSessionActivity) ...[
+                    const SizedBox(height: CatchLingoSpacing.lg),
+                    FilledButton.tonalIcon(
+                      onPressed: _finishSession,
+                      icon: const Icon(Icons.flag_rounded),
+                      label: const Text('Finish session'),
+                    ),
+                  ],
+                ],
               ),
-            ),
-            const SizedBox(height: CatchLingoSpacing.lg),
-            CollectionCounter(count: _sessionCatchCount),
-            const SizedBox(height: CatchLingoSpacing.md),
-            _LatestDiscoveryPanel(
-              spot: _latestSpot,
-              sceneComplete: _sceneComplete,
-              onNextScene: _nextScene,
-            ),
-            if (_hasSessionActivity) ...[
-              const SizedBox(height: CatchLingoSpacing.lg),
-              FilledButton.tonalIcon(
-                onPressed: _finishSession,
-                icon: const Icon(Icons.flag_rounded),
-                label: const Text('Finish session'),
+      ),
+    );
+  }
+}
+
+class _WarmExploreLoading extends StatelessWidget {
+  const _WarmExploreLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(CatchLingoSpacing.screen),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(CatchLingoSpacing.xl),
+          decoration: BoxDecoration(
+            color: CatchLingoColors.card,
+            borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
+            border: Border.all(color: Colors.white),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 14),
               ),
             ],
-          ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 34,
+                height: 34,
+                child: CircularProgressIndicator(strokeWidth: 3),
+              ),
+              const SizedBox(height: CatchLingoSpacing.lg),
+              Text(
+                'Opening your discovery session',
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: CatchLingoSpacing.xs),
+              Text(
+                'Looking for words nearby...',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: CatchLingoColors.textMuted,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -201,6 +269,54 @@ class _NextSceneButton extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SessionProgressCard extends StatelessWidget {
+  const _SessionProgressCard({
+    required this.newCount,
+    required this.seenAgainCount,
+  });
+
+  final int newCount;
+  final int seenAgainCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(CatchLingoSpacing.lg),
+        child: Row(
+          children: [
+            CollectionCounter(count: newCount, compact: true),
+            const SizedBox(width: CatchLingoSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$newCount caught this session',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: CatchLingoSpacing.xs),
+                  Text(
+                    seenAgainCount == 0
+                        ? 'Known words you spot again will show up here.'
+                        : '$seenAgainCount known ${seenAgainCount == 1 ? 'word' : 'words'} spotted again',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: CatchLingoColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -592,71 +708,80 @@ class _NewCatchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(CatchLingoSpacing.lg),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFEAF3E2), Color(0xFFE0EDD6)],
-        ),
-        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
-        border: Border.all(color: CatchLingoColors.successBorder),
-        boxShadow: [
-          BoxShadow(
-            color: CatchLingoColors.successIcon.withValues(alpha: 0.10),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.96, end: 1),
+      duration: CatchLingoMotion.feedback,
+      curve: Curves.easeOutBack,
+      builder: (context, scale, child) {
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: Container(
+        padding: const EdgeInsets.all(CatchLingoSpacing.lg),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFEAF3E2), Color(0xFFE0EDD6)],
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.auto_awesome_rounded,
-                color: CatchLingoColors.successIcon,
-              ),
-              const SizedBox(width: CatchLingoSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Caught!',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: CatchLingoColors.successText,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: CatchLingoSpacing.xs),
-                    Text(
-                      word.translation,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(
-                            color: CatchLingoColors.successText,
-                            fontWeight: FontWeight.w900,
-                          ),
-                    ),
-                    Text(
-                      word.source,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: CatchLingoColors.successIcon,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          if (footer != null) ...[
-            const SizedBox(height: CatchLingoSpacing.md),
-            footer!,
+          borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+          border: Border.all(color: CatchLingoColors.successBorder),
+          boxShadow: [
+            BoxShadow(
+              color: CatchLingoColors.successIcon.withValues(alpha: 0.18),
+              blurRadius: 24,
+              spreadRadius: 1,
+              offset: const Offset(0, 10),
+            ),
           ],
-        ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: CatchLingoColors.successIcon,
+                ),
+                const SizedBox(width: CatchLingoSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Caught!',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: CatchLingoColors.successText,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: CatchLingoSpacing.xs),
+                      Text(
+                        word.translation,
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              color: CatchLingoColors.successText,
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      Text(
+                        word.source,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: CatchLingoColors.successIcon,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (footer != null) ...[
+              const SizedBox(height: CatchLingoSpacing.md),
+              footer!,
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -695,7 +820,11 @@ class _SceneCompleteFooter extends StatelessWidget {
 }
 
 class _SeenAgainCard extends StatelessWidget {
-  const _SeenAgainCard({super.key, required this.word, required this.seenCount});
+  const _SeenAgainCard({
+    super.key,
+    required this.word,
+    required this.seenCount,
+  });
 
   final CatchWord word;
   final int seenCount;

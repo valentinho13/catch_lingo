@@ -55,9 +55,10 @@ class CatchWordChip extends StatelessWidget {
                 boxShadow: [
                   BoxShadow(
                     color: isCollected
-                        ? CatchLingoColors.successIcon.withValues(alpha: 0.20)
+                        ? CatchLingoColors.successIcon.withValues(alpha: 0.24)
                         : colorScheme.primary.withValues(alpha: 0.10),
-                    blurRadius: isCollected ? 16 : 14,
+                    blurRadius: isCollected ? 22 : 14,
+                    spreadRadius: isCollected ? 1 : 0,
                     offset: const Offset(0, 7),
                   ),
                 ],
@@ -138,7 +139,7 @@ class _CaughtContent extends StatelessWidget {
                 ),
               ),
               Text(
-                word.source,
+                'caught · ${word.source}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
