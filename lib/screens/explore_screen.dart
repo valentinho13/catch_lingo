@@ -38,6 +38,9 @@ class _ExploreScreenState extends State<ExploreScreen>
   bool _isScanning = true;
   int _sessionKnownSeen = 0;
 
+  bool get _hasSessionProgress =>
+      _sessionCaught.isNotEmpty || _sessionKnownSeen > 0;
+
   @override
   void initState() {
     super.initState();
@@ -287,6 +290,15 @@ class _ExploreScreenState extends State<ExploreScreen>
     });
   }
 
+  void _finishOrExit() {
+    if (!_hasSessionProgress || _sessionComplete) {
+      Navigator.of(context).pop();
+      return;
+    }
+
+    _completeSession();
+  }
+
   void _continueAfterSession() {
     setState(() {
       _sessionComplete = false;
@@ -299,115 +311,127 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: _FullscreenDiscoveryLayer(
-              words: mockCatchWords,
-              collectedWords: _collectedWords,
-              activeDetection: _activeDetection,
-              isScanning: _isScanning,
-              cameraController: _cameraController,
-              cameraMessage: _cameraMessage,
-              isCameraStarting: _isCameraStarting,
-              onRetryCamera: _startCamera,
+    return PopScope(
+      canPop: !_hasSessionProgress || _sessionComplete,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          _finishOrExit();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: _FullscreenDiscoveryLayer(
+                words: mockCatchWords,
+                collectedWords: _collectedWords,
+                activeDetection: _activeDetection,
+                isScanning: _isScanning,
+                cameraController: _cameraController,
+                cameraMessage: _cameraMessage,
+                isCameraStarting: _isCameraStarting,
+                onRetryCamera: _startCamera,
+              ),
             ),
-          ),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isLandscape =
-                    constraints.maxWidth > constraints.maxHeight;
-                final panelWidth = isLandscape
-                    ? (constraints.maxWidth * 0.36).clamp(300.0, 430.0)
-                    : (constraints.maxWidth * 0.90).clamp(300.0, 460.0);
+            SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isLandscape =
+                      constraints.maxWidth > constraints.maxHeight;
+                  final panelWidth = isLandscape
+                      ? (constraints.maxWidth * 0.36).clamp(300.0, 430.0)
+                      : (constraints.maxWidth * 0.90).clamp(300.0, 460.0);
 
-                return Padding(
-                  padding: const EdgeInsets.all(CatchLingoSpacing.lg),
-                  child: Stack(
-                    children: [
-                      Align(
-                        alignment: Alignment.topCenter,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _ExploreTopBar(count: _collectedWords.length),
-                            const SizedBox(height: CatchLingoSpacing.sm),
-                            _SessionProgressStrip(
-                              caught: _sessionCaught.length,
-                              knownSeen: _sessionKnownSeen,
-                              goal: _sessionGoal,
-                            ),
-                          ],
-                        ),
-                      ),
-                      Positioned(
-                        left: isLandscape
-                            ? null
-                            : (constraints.maxWidth - panelWidth) / 2,
-                        right: isLandscape ? 0 : null,
-                        bottom: 0,
-                        width: panelWidth,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            maxHeight: constraints.maxHeight - 92,
-                          ),
-                          child: SingleChildScrollView(
-                            reverse: true,
-                            physics: const ClampingScrollPhysics(),
-                            child: _DetectionBottomPanel(
-                              activeDetection: _activeDetection,
-                              justCaught: _justCaught,
-                              justCaughtIsDuplicate: _justCaughtIsDuplicate,
-                              isScanning: _isScanning,
-                              onCatch: _collectWord,
-                              onScanNext: _scanNext,
-                            ),
+                  return Padding(
+                    padding: const EdgeInsets.all(CatchLingoSpacing.lg),
+                    child: Stack(
+                      children: [
+                        Align(
+                          alignment: Alignment.topCenter,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _ExploreTopBar(
+                                count: _collectedWords.length,
+                                onExit: _finishOrExit,
+                              ),
+                              const SizedBox(height: CatchLingoSpacing.sm),
+                              _SessionProgressStrip(
+                                caught: _sessionCaught.length,
+                                knownSeen: _sessionKnownSeen,
+                                goal: _sessionGoal,
+                              ),
+                            ],
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-          if (_justCaught != null && !_sessionComplete)
-            Positioned.fill(
-              child: _CatchCelebrationOverlay(
-                word: _justCaught!,
-                isDuplicate: _justCaughtIsDuplicate,
-                totalCaught: _collectedWords.length,
+                        Positioned(
+                          left: isLandscape
+                              ? null
+                              : (constraints.maxWidth - panelWidth) / 2,
+                          right: isLandscape ? 0 : null,
+                          bottom: 0,
+                          width: panelWidth,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxHeight: constraints.maxHeight - 92,
+                            ),
+                            child: SingleChildScrollView(
+                              reverse: true,
+                              physics: const ClampingScrollPhysics(),
+                              child: _DetectionBottomPanel(
+                                activeDetection: _activeDetection,
+                                justCaught: _justCaught,
+                                justCaughtIsDuplicate: _justCaughtIsDuplicate,
+                                isScanning: _isScanning,
+                                onCatch: _collectWord,
+                                onScanNext: _scanNext,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
-          if (_sessionComplete)
-            Positioned.fill(
-              child: _SessionCompleteOverlay(
-                words: _sessionCaught,
-                knownSeen: _sessionKnownSeen,
-                onContinue: _continueAfterSession,
-                onExit: () => Navigator.of(context).pop(),
+            if (_justCaught != null && !_sessionComplete)
+              Positioned.fill(
+                child: _CatchCelebrationOverlay(
+                  word: _justCaught!,
+                  isDuplicate: _justCaughtIsDuplicate,
+                  totalCaught: _collectedWords.length,
+                ),
               ),
-            ),
-        ],
+            if (_sessionComplete)
+              Positioned.fill(
+                child: _SessionCompleteOverlay(
+                  words: _sessionCaught,
+                  knownSeen: _sessionKnownSeen,
+                  onContinue: _continueAfterSession,
+                  onExit: () => Navigator.of(context).pop(),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _ExploreTopBar extends StatelessWidget {
-  const _ExploreTopBar({required this.count});
+  const _ExploreTopBar({required this.count, required this.onExit});
 
   final int count;
+  final VoidCallback onExit;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         IconButton.filled(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: onExit,
           style: IconButton.styleFrom(
             backgroundColor: Colors.white.withValues(alpha: 0.82),
             foregroundColor: CatchLingoColors.textPrimary,
