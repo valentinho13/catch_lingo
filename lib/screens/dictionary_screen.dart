@@ -356,4 +356,35 @@ class _DictionaryWordCard extends StatelessWidget {
                     _spotInfo(seenCount, lastSeen),
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: CatchLingoColors.textMuted,
-                 
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _spotInfo(int seenCount, DateTime? lastSeen) {
+    final times = seenCount <= 1 ? 'once' : '$seenCount×';
+    if (lastSeen == null) return 'Spotted $times';
+    return 'Spotted $times · ${relativeDayLabel(lastSeen)}';
+  }
+}
+
+/// Short, friendly relative day label for journal entries.
+String relativeDayLabel(DateTime time, {DateTime? now}) {
+  final reference = now ?? DateTime.now();
+  final today = DateTime(reference.year, reference.month, reference.day);
+  final day = DateTime(time.year, time.month, time.day);
+  final difference = today.difference(day).inDays;
+
+  if (difference <= 0) return 'today';
+  if (difference == 1) return 'yesterday';
+  if (difference < 7) return '$difference days ago';
+  final weeks = difference ~/ 7;
+  return weeks == 1 ? 'a week ago' : '$weeks weeks ago';
+}
