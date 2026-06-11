@@ -68,15 +68,15 @@ Avoid:
 
 The current focus is:
 
-- Home screen
-- Explore Mode
-- Dictionary
-- mock word detection
-- tap-to-catch
-- translation reveal
-- session counter
-- catch feedback
-- dictionary preview
+- polishing the catch moment (animations, micro-interactions)
+- Home screen identity / branding (cat + AR corners, app icon)
+- dictionary word detail (bottom sheet)
+- keeping the mock discovery loop tight
+
+Already built (do not rebuild, extend carefully): warm field-journal theme,
+mock scenes, tap-to-catch with reveal, seen-again micro-reward,
+SharedPreferences persistence (caughtIDs / seenCount / lastSeenAt),
+dictionary from caught words, session summary, lightweight review.
 
 The current focus is not:
 
