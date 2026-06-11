@@ -30,6 +30,11 @@ All notable changes to CatchLingo.
 - Journal summary card ("X words caught · Y more waiting in the scenes").
 - Honest empty state shown only when the collection is actually empty.
 
+### Session summary (new)
+
+- "Finish session" appears in Explore once the session has activity; leads to a summary screen with new vs. spotted-again split, the session's words, and Review / Done actions.
+- Words still save instantly on catch — the summary is a reward moment, not a save step.
+
 ### Review (new)
 
 - Lightweight flashcard review over caught words: tap to reveal, "Knew it" / "Again later" self-assessment, "Again later" requeues the word once.
@@ -40,11 +45,16 @@ All notable changes to CatchLingo.
 - Collection status card shows the real persisted count.
 - Count refreshes when returning from Explore or Dictionary.
 
+### Polish
+
+- Catch chips now pop with a subtle overshoot (easeOutBack) when caught.
+- ROADMAP.md phase statuses updated (phases 1–4 done, basic review done).
+
 ### Tests
 
 - Updated widget tests for the new copy and flow.
 - New unit tests for `CollectionStore` (new catch, repeat spots, lastSeenAt, corrupt data).
-- New widget tests for the Review screen.
+- New widget tests for the Review screen and the session summary flow.
 
 ## Earlier
 

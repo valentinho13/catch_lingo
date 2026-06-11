@@ -24,7 +24,7 @@ class CatchWordChip extends StatelessWidget {
     return AnimatedScale(
       scale: isCollected ? 1.04 : 1,
       duration: CatchLingoMotion.chip,
-      curve: Curves.easeOutCubic,
+      curve: Curves.easeOutBack,
       child: SizedBox(
         width: isCollected ? 124 : 82,
         child: Material(

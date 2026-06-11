@@ -73,6 +73,7 @@ Implemented so far:
 - Dictionary built from actually caught words, grouped by category
 - Spotted-count and last-seen info per word
 - Lightweight Review flow (tap to reveal, self-assess, requeue)
+- Session summary flow (finish session → new vs. already-known words, review entry)
 - Session counter and collection feedback
 - Duplicate collection prevention
 - Central design system foundation and theme file
@@ -117,7 +118,6 @@ The product is the discovery experience.
 
 Near-term:
 
-- Add a simple session summary flow ("finish session" → what you caught)
 - Polish catch animations and micro-interactions further
 - Sharpen Home screen identity (icon / branding with cat + AR corners)
 - Optional marker-tap variations in Explore

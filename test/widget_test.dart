@@ -117,4 +117,39 @@ void main() {
     );
     expect(find.text('Review your words'), findsNothing);
   });
+
+  testWidgets('finishing a session shows the summary', (tester) async {
+    await tester.pumpWidget(const CatchLingoApp());
+    await tester.pump();
+
+    await tester.tap(find.text('Start Exploring'));
+    await tester.pumpAndSettle();
+
+    // No session activity yet, so the session cannot be finished.
+    expect(find.text('Finish session'), findsNothing);
+
+    final chairChip = find.byKey(const ValueKey('catch-chair'));
+    await tester.ensureVisible(chairChip);
+    await tester.tap(chairChip);
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Finish session'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Session complete'), findsOneWidget);
+    expect(find.textContaining('1 new word'), findsOneWidget);
+    expect(find.text('kursi'), findsOneWidget);
+    expect(find.text('Review these words'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    // Back home with the catch persisted.
+    expect(find.text('Start Exploring'), findsOneWidget);
+    expect(find.text('1 word in your journal.'), findsOneWidget);
+  });
 }
