@@ -19,7 +19,8 @@ class ExploreScreen extends StatefulWidget {
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> {
+class _ExploreScreenState extends State<ExploreScreen>
+    with WidgetsBindingObserver {
   static const _storage = CaughtWordStorage();
   static const _sessionGoal = 5;
   final _detectionService = MockDetectionService();
@@ -40,15 +41,61 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadCaughtWords();
     _startCamera();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _detectionTimer?.cancel();
     _cameraController?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final controller = _cameraController;
+
+    if (controller == null || !controller.value.isInitialized) {
+      return;
+    }
+
+    switch (state) {
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        _pauseCameraPreview(controller);
+        break;
+      case AppLifecycleState.resumed:
+        _resumeCameraPreview(controller);
+        break;
+      case AppLifecycleState.detached:
+        break;
+    }
+  }
+
+  Future<void> _pauseCameraPreview(CameraController controller) async {
+    try {
+      if (!controller.value.isPreviewPaused) {
+        await controller.pausePreview();
+      }
+    } on CameraException {
+      // Android may already have reclaimed the preview while backgrounding.
+    }
+  }
+
+  Future<void> _resumeCameraPreview(CameraController controller) async {
+    try {
+      if (controller.value.isPreviewPaused) {
+        await controller.resumePreview();
+      }
+    } on CameraException {
+      if (mounted) {
+        _setCameraMessage('Camera paused while you were away. Try it again.');
+      }
+    }
   }
 
   void _scheduleNextDetection({Duration delay = const Duration(seconds: 1)}) {
@@ -81,10 +128,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Future<void> _startCamera() async {
+    final previousController = _cameraController;
+
     setState(() {
       _isCameraStarting = true;
       _cameraMessage = null;
+      _cameraController = null;
     });
+
+    await previousController?.dispose();
 
     try {
       final cameras = await availableCameras();
