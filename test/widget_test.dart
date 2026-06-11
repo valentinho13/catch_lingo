@@ -106,6 +106,18 @@ void main() {
 
     expect(find.text('kopi'), findsOneWidget);
     expect(find.text('English hidden'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Show answer'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('coffee'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Again'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nice remembering'), findsOneWidget);
+    expect(find.text('Explore more'), findsOneWidget);
+    expect(find.text('Review again'), findsOneWidget);
   });
 
   testWidgets('opens dictionary word detail and starts review there', (

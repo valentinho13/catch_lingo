@@ -22,6 +22,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
   static const _storage = CaughtWordStorage();
 
   late Future<List<CatchWord>> _wordsFuture;
+  final Set<String> _reviewedWordIds = {};
   var _currentIndex = 0;
   var _isAnswerVisible = false;
 
@@ -65,6 +66,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     setState(() {
       _currentIndex = 0;
       _isAnswerVisible = false;
+      _reviewedWordIds.clear();
       _wordsFuture = _loadReviewWords();
     });
   }
@@ -75,13 +77,37 @@ class _ReviewScreenState extends State<ReviewScreen> {
     });
   }
 
-  void _moveNext(List<CatchWord> words) {
+  void _markReviewedAndMoveNext(List<CatchWord> words) {
     if (words.isEmpty) {
       return;
     }
 
+    final currentWord = words[_currentIndex % words.length];
+
     setState(() {
-      _currentIndex = (_currentIndex + 1) % words.length;
+      _reviewedWordIds.add(currentWord.id);
+      if (_reviewedWordIds.length < words.length) {
+        _currentIndex = _nextUnreviewedIndex(words);
+      }
+      _isAnswerVisible = false;
+    });
+  }
+
+  int _nextUnreviewedIndex(List<CatchWord> words) {
+    for (var offset = 1; offset <= words.length; offset++) {
+      final nextIndex = (_currentIndex + offset) % words.length;
+      if (!_reviewedWordIds.contains(words[nextIndex].id)) {
+        return nextIndex;
+      }
+    }
+
+    return _currentIndex;
+  }
+
+  void _restartReview() {
+    setState(() {
+      _reviewedWordIds.clear();
+      _currentIndex = 0;
       _isAnswerVisible = false;
     });
   }
@@ -115,6 +141,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
             final currentWord = words[_currentIndex % words.length];
             final fadingCount = words.where(_isFadingWord).length;
+            final isComplete = _reviewedWordIds.length >= words.length;
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(
@@ -154,20 +181,29 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 ),
                 const SizedBox(height: CatchLingoSpacing.lg),
                 _ReviewProgress(
-                  current: (_currentIndex % words.length) + 1,
+                  current: isComplete
+                      ? words.length
+                      : _reviewedWordIds.length + 1,
                   total: words.length,
                 ),
                 const SizedBox(height: CatchLingoSpacing.xl),
-                _ReviewCard(
-                  word: currentWord,
-                  current: (_currentIndex % words.length) + 1,
-                  total: words.length,
-                  isAnswerVisible: _isAnswerVisible,
-                  isFading: _isFadingWord(currentWord),
-                  onShowAnswer: _showAnswer,
-                  onAgain: () => _moveNext(words),
-                  onKnewIt: () => _moveNext(words),
-                ),
+                if (isComplete)
+                  _ReviewCompleteCard(
+                    count: words.length,
+                    onRestart: _restartReview,
+                    onExplore: _openExplore,
+                  )
+                else
+                  _ReviewCard(
+                    word: currentWord,
+                    current: _reviewedWordIds.length + 1,
+                    total: words.length,
+                    isAnswerVisible: _isAnswerVisible,
+                    isFading: _isFadingWord(currentWord),
+                    onShowAnswer: _showAnswer,
+                    onAgain: () => _markReviewedAndMoveNext(words),
+                    onKnewIt: () => _markReviewedAndMoveNext(words),
+                  ),
               ],
             );
           },
@@ -483,6 +519,100 @@ class _ReviewCard extends StatelessWidget {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ReviewCompleteCard extends StatelessWidget {
+  const _ReviewCompleteCard({
+    required this.count,
+    required this.onRestart,
+    required this.onExplore,
+  });
+
+  final int count;
+  final VoidCallback onRestart;
+  final VoidCallback onExplore;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 320),
+      padding: const EdgeInsets.all(CatchLingoSpacing.xl),
+      decoration: BoxDecoration(
+        color: CatchLingoColors.warmSurface,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
+        border: Border.all(
+          color: CatchLingoColors.warmGreen.withValues(alpha: 0.12),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 28,
+            offset: const Offset(0, 16),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: CatchLingoColors.warmGreen.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(26),
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: CatchLingoColors.warmGreen,
+                size: 38,
+              ),
+            ),
+          ),
+          const SizedBox(height: CatchLingoSpacing.lg),
+          Text(
+            'Nice remembering',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: CatchLingoColors.textPrimary,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: CatchLingoSpacing.sm),
+          Text(
+            'You reviewed $count ${count == 1 ? 'word' : 'words'} from your collection.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: CatchLingoColors.textMuted,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: CatchLingoSpacing.xl),
+          FilledButton.icon(
+            onPressed: onExplore,
+            style: FilledButton.styleFrom(
+              backgroundColor: CatchLingoColors.warmGreen,
+              foregroundColor: Colors.white,
+              minimumSize: const Size.fromHeight(50),
+            ),
+            icon: const Icon(Icons.travel_explore_rounded),
+            label: const Text('Explore more'),
+          ),
+          const SizedBox(height: CatchLingoSpacing.sm),
+          TextButton(
+            onPressed: onRestart,
+            style: TextButton.styleFrom(
+              foregroundColor: CatchLingoColors.textMuted,
+              minimumSize: const Size.fromHeight(44),
+            ),
+            child: const Text('Review again'),
+          ),
+        ],
       ),
     );
   }
