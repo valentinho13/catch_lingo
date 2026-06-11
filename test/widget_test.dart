@@ -1,170 +1,78 @@
 import 'package:catch_lingo/app/catch_lingo_app.dart';
-import 'package:flutter/material.dart';
+import 'package:catch_lingo/data/mock_catch_words.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  setUp(() {
-    SharedPreferences.setMockInitialValues({});
-  });
-
-  Future<void> openDictionaryFromHome(WidgetTester tester) async {
-    final dictionaryButton = find.widgetWithText(
-      OutlinedButton,
-      'My Dictionary',
-    );
-    await tester.scrollUntilVisible(dictionaryButton, 160);
-    await tester.drag(find.byType(ListView), const Offset(0, -90));
-    await tester.pumpAndSettle();
-    await tester.tap(dictionaryButton);
-    await tester.pumpAndSettle();
-  }
-
   testWidgets('shows the CatchLingo start screen', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
     await tester.pumpWidget(const CatchLingoApp());
-    await tester.pump();
 
     expect(find.text('CatchLingo'), findsOneWidget);
-    expect(find.text('Catch words from the world around you.'), findsOneWidget);
-    expect(find.text('Start Exploring'), findsOneWidget);
-
-    await tester.scrollUntilVisible(find.text('My Dictionary'), 160);
-
-    expect(find.text('My Dictionary'), findsOneWidget);
-    expect(find.text('No words caught yet.'), findsOneWidget);
-  });
-
-  testWidgets('catches a word once and rewards spotting it again', (
-    tester,
-  ) async {
-    await tester.pumpWidget(const CatchLingoApp());
-    await tester.pump();
-
-    await tester.tap(find.text('Start Exploring'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Explore'), findsOneWidget);
-    expect(find.text('Discovery preview'), findsOneWidget);
-    expect(find.text('Cafe table'), findsOneWidget);
-    expect(find.text('0 caught this session'), findsOneWidget);
-    expect(find.text('Object'), findsWidgets);
-    expect(find.text('chair'), findsNothing);
-    expect(find.text('kursi'), findsNothing);
-
-    final chairChip = find.byKey(const ValueKey('catch-chair'));
-
-    await tester.ensureVisible(chairChip);
-    await tester.tap(chairChip);
-    await tester.pumpAndSettle();
-
-    // Catch reveal: the translation is the reward.
-    expect(find.text('1 caught this session'), findsOneWidget);
-    expect(find.text('Caught!'), findsOneWidget);
-    expect(find.text('kursi'), findsWidgets);
-    expect(find.text('chair'), findsWidgets);
-
-    // Spotting the same word again is a micro-reward, not a new catch.
-    await tester.ensureVisible(chairChip);
-    await tester.tap(chairChip);
-    await tester.pumpAndSettle();
-
-    expect(find.text('1 caught this session'), findsOneWidget);
-    expect(find.text('kursi — you know this one!'), findsOneWidget);
-    expect(find.textContaining('Spotted 2×'), findsOneWidget);
-  });
-
-  testWidgets('switches to the next scene', (tester) async {
-    await tester.pumpWidget(const CatchLingoApp());
-    await tester.pump();
-
-    await tester.tap(find.text('Start Exploring'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Cafe table'), findsOneWidget);
-
-    await tester.tap(find.text('Next scene'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Street market'), findsOneWidget);
-    expect(find.text('Cafe table'), findsNothing);
-  });
-
-  testWidgets('caught words appear in the dictionary', (tester) async {
-    await tester.pumpWidget(const CatchLingoApp());
-    await tester.pump();
-
-    await tester.tap(find.text('Start Exploring'));
-    await tester.pumpAndSettle();
-
-    await tester.ensureVisible(find.byKey(const ValueKey('catch-coffee')));
-    await tester.tap(find.byKey(const ValueKey('catch-coffee')));
-    await tester.pumpAndSettle();
-
-    // Back home, then into the dictionary.
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-    await openDictionaryFromHome(tester);
-
-    expect(find.text('1 word caught'), findsOneWidget);
-    expect(find.text('kopi'), findsOneWidget);
-    expect(find.text('coffee'), findsOneWidget);
-    expect(find.text('Review your words'), findsOneWidget);
-    expect(find.textContaining('Spotted once'), findsOneWidget);
-
-    // Word detail bottom sheet.
-    await tester.tap(find.text('kopi'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Keep spotting it to make it stick.'), findsOneWidget);
-    expect(find.textContaining('Spotted once'), findsWidgets);
-  });
-
-  testWidgets('empty dictionary encourages exploring', (tester) async {
-    await tester.pumpWidget(const CatchLingoApp());
-    await tester.pump();
-
-    await openDictionaryFromHome(tester);
-
-    expect(find.text('No words caught yet.'), findsOneWidget);
     expect(
-      find.text('Start exploring to catch your first real-world words.'),
+      find.textContaining('Explore the world.', findRichText: true),
       findsOneWidget,
     );
-    expect(find.text('Review your words'), findsNothing);
+    expect(find.textContaining('Point. Discover. Learn.'), findsOneWidget);
+
+    expect(find.text('Your statistics'), findsOneWidget);
+    expect(find.text('Your categories'), findsOneWidget);
+    expect(find.text('Dictionary'), findsOneWidget);
   });
 
-  testWidgets('finishing a session shows the summary', (tester) async {
+  testWidgets('catches an automatic mock discovery', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+
     await tester.pumpWidget(const CatchLingoApp());
+
+    await tester.scrollUntilVisible(find.text('Start Exploring'), 160);
+    await tester.tap(find.text('Start Exploring'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1200));
+
+    expect(find.text('Explore'), findsOneWidget);
+    expect(find.text('Something here'), findsOneWidget);
+    expect(find.text('Catch it to discover the word'), findsOneWidget);
+    expect(find.text('Catch'), findsOneWidget);
+
+    await tester.tap(find.text('Catch'));
     await tester.pump();
 
-    await tester.tap(find.text('Start Exploring'));
+    expect(find.text('1 caught'), findsOneWidget);
+    expect(find.text('Found it'), findsOneWidget);
+    expect(
+      mockCatchWords.any((word) => tester.any(find.text(word.translation))),
+      isTrue,
+    );
+  });
+
+  testWidgets('reviews saved caught words one card at a time', (tester) async {
+    SharedPreferences.setMockInitialValues({
+      'catch_lingo_caught_words': '''
+[{"id":"chair","source":"chair","translation":"kursi","category":"Home","languageCode":"id","confidence":0.96,"markerX":0.0,"markerY":0.0,"caughtAt":null,"seenCount":1,"lastSeenAt":null},{"id":"coffee","source":"coffee","translation":"kopi","category":"Cafe","languageCode":"id","confidence":0.94,"markerX":0.0,"markerY":0.0,"caughtAt":null,"seenCount":1,"lastSeenAt":null}]
+''',
+    });
+
+    await tester.pumpWidget(const CatchLingoApp());
+
+    await tester.tap(find.text('Review'));
     await tester.pumpAndSettle();
 
-    // No session activity yet, so the session cannot be finished.
-    expect(find.text('Finish session'), findsNothing);
-
-    final chairChip = find.byKey(const ValueKey('catch-chair'));
-    await tester.ensureVisible(chairChip);
-    await tester.tap(chairChip);
-    await tester.pumpAndSettle();
-
-    await tester.drag(find.byType(ListView), const Offset(0, -400));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Finish session'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Session complete'), findsOneWidget);
-    expect(find.textContaining('1 new word'), findsOneWidget);
+    expect(find.text('Remember'), findsOneWidget);
     expect(find.text('kursi'), findsOneWidget);
-    expect(find.text('Review these words'), findsOneWidget);
+    expect(find.text('English hidden'), findsOneWidget);
+    expect(find.text('chair'), findsNothing);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -400));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Done'));
+    await tester.tap(find.byTooltip('Show answer'));
     await tester.pumpAndSettle();
 
-    // Back home with the catch persisted.
-    expect(find.text('Start Exploring'), findsOneWidget);
-    expect(find.text('1 word in your journal.'), findsOneWidget);
+    expect(find.text('chair'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Knew it'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('kopi'), findsOneWidget);
+    expect(find.text('English hidden'), findsOneWidget);
   });
 }

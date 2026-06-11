@@ -19,12 +19,10 @@ class CatchWordChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return AnimatedScale(
       scale: isCollected ? 1.04 : 1,
       duration: CatchLingoMotion.chip,
-      curve: Curves.easeOutBack,
+      curve: Curves.easeOutCubic,
       child: SizedBox(
         width: isCollected ? 124 : 82,
         child: Material(
@@ -43,22 +41,21 @@ class CatchWordChip extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isCollected
                     ? CatchLingoColors.successSurface
-                    : Colors.white.withValues(alpha: 0.72),
+                    : const Color(0xFF121615).withValues(alpha: 0.82),
                 borderRadius: BorderRadius.circular(
                   isCollected ? CatchLingoRadius.chip : 22,
                 ),
                 border: Border.all(
                   color: isCollected
                       ? CatchLingoColors.successBorder
-                      : colorScheme.primary.withValues(alpha: 0.28),
+                      : CatchLingoColors.mint.withValues(alpha: 0.28),
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: isCollected
-                        ? CatchLingoColors.successIcon.withValues(alpha: 0.24)
-                        : colorScheme.primary.withValues(alpha: 0.10),
-                    blurRadius: isCollected ? 22 : 14,
-                    spreadRadius: isCollected ? 1 : 0,
+                        ? CatchLingoColors.successIcon.withValues(alpha: 0.20)
+                        : CatchLingoColors.mint.withValues(alpha: 0.12),
+                    blurRadius: isCollected ? 16 : 14,
                     offset: const Offset(0, 7),
                   ),
                 ],
@@ -87,19 +84,17 @@ class _HiddenMarkerContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 22, color: colorScheme.primary),
+        Icon(icon, size: 22, color: CatchLingoColors.mint),
         const SizedBox(height: CatchLingoSpacing.xs),
         Text(
           'Object',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: colorScheme.onSurface,
+            color: Colors.white.withValues(alpha: 0.78),
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -139,11 +134,11 @@ class _CaughtContent extends StatelessWidget {
                 ),
               ),
               Text(
-                'caught · ${word.source}',
+                word.source,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: CatchLingoColors.successIcon,
+                  color: const Color(0xFF31765A),
                   fontWeight: FontWeight.w700,
                 ),
               ),

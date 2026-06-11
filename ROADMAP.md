@@ -10,8 +10,6 @@ The long-term experience:
 
 ## Phase 1 — App Foundation
 
-Status: done.
-
 Goal:
 
 Create a clean, modern MVP shell.
@@ -26,9 +24,11 @@ Includes:
 - design-system foundation
 - simple tests
 
-## Phase 2 — Mock Discovery Loop
+Status:
 
-Status: done (multiple mock scenes, catch reveal, seen-again micro-reward).
+- in progress / partially implemented
+
+## Phase 2 — Mock Discovery Loop
 
 Goal:
 
@@ -54,8 +54,6 @@ Success criteria:
 
 ## Phase 3 — Session Summary
 
-Status: done (finish session → summary with new/known split; words save instantly on catch, so no separate save action).
-
 Goal:
 
 Make an Explore session feel complete.
@@ -76,8 +74,6 @@ Success criteria:
 - caught words feel worth keeping
 
 ## Phase 4 — Dictionary Connection
-
-Status: done in a basic form (SharedPreferences persistence, category grouping; filters and word detail sheet still open).
 
 Goal:
 
@@ -139,8 +135,6 @@ Success criteria:
 - user can catch real-world words
 
 ## Phase 7 — Review
-
-Status: basic version done (lightweight tap-to-reveal flashcards; no spaced repetition).
 
 Goal:
 

@@ -80,26 +80,27 @@ Prefer:
 
 ## Color Direction
 
-CatchLingo uses a warm field-journal palette. This direction is locked.
+See `DESIGN_VISION.md` for the canonical color philosophy. This is the practical
+summary.
 
-- primary: leaf green (`#3F6B4A` seed)
-- accent: honey amber (`#D99A2B`) — used sparingly
-- background: warm cream paper (`#FAF6EB`)
-- surface: warm near-white cards (`#FFFDF6`)
-- text: warm dark brown-green, muted warm gray
+The palette is warm and naturally lit:
+
+- canvas / background: warm cream and soft warm neutrals
+- surface: warm off-white elevated cards (never stark white, never dark)
+- primary / discovery: a living green
+- reward: a warm amber
+- muted: warm gray
 
 Semantic color use:
 
-- green: exploration, main action, caught / success
-- amber: review, "spotted again" micro-rewards, attention
-- muted warm gray: known / inactive
+- green: discovery / main action / something worth noticing
+- amber: reward / caught / a treasured find
+- cream + warm neutrals: the calm canvas
+- warm gray: known / inactive
 
-Retired directions — do not reintroduce:
-
-- cool indigo / blue-violet / teal scanner look
-- dark cyber-HUD optics
-
-Avoid overly saturated toy colors.
+Avoid: cool blues / indigo / lavender, cold grays, dark "night" / navy / charcoal
+surfaces, neon, and overly saturated toy colors. The earlier indigo + mint and
+dark-mode direction is retired in favor of the warm vision.
 
 ## Typography
 

@@ -34,12 +34,26 @@ Not:
 
 Before major changes, read:
 
-1. `VISION.md`
-2. `DESIGN_SYSTEM.md`
-3. `UI_SPEC.md`
-4. `TECHNICAL_DECISIONS.md`
-5. `README.md`
-6. `ROADMAP.md`
+1. `DESIGN_VISION.md` — **canonical** look, feel, and atmosphere. Overrides any
+   conflicting visual guidance elsewhere.
+2. `VISION.md`
+3. `DESIGN_SYSTEM.md`
+4. `UI_SPEC.md`
+5. `TECHNICAL_DECISIONS.md`
+6. `README.md`
+7. `ROADMAP.md`
+
+## Visual Direction (binding)
+
+CatchLingo is **warm, sunlit, and lived-in**: a green-of-discovery and amber-of-reward
+identity on a cream canvas, with real-world warmth and soft natural light. Each caught
+word is a treasured find — a clean specimen card lifted over a warm photograph of the
+world.
+
+The earlier cool indigo/mint palette and dark, technical camera surface are **retired**.
+Do not reintroduce cool/corporate blues, dark sci-fi camera HUDs, confidence readouts,
+debug overlays, flashcard/school energy, or loud gamification. When any visual decision
+is unclear, defer to `DESIGN_VISION.md`.
 
 ## Development Rules
 
@@ -68,15 +82,15 @@ Avoid:
 
 The current focus is:
 
-- polishing the catch moment (animations, micro-interactions)
-- Home screen identity / branding (cat + AR corners, app icon)
-- dictionary word detail (bottom sheet)
-- keeping the mock discovery loop tight
-
-Already built (do not rebuild, extend carefully): warm field-journal theme,
-mock scenes, tap-to-catch with reveal, seen-again micro-reward,
-SharedPreferences persistence (caughtIDs / seenCount / lastSeenAt),
-dictionary from caught words, session summary, lightweight review.
+- Home screen
+- Explore Mode
+- Dictionary
+- mock word detection
+- tap-to-catch
+- translation reveal
+- session counter
+- catch feedback
+- dictionary preview
 
 The current focus is not:
 

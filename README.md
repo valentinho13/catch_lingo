@@ -63,22 +63,21 @@ Implemented so far:
 
 - Flutter / Material 3 app structure
 - Android-first MVP direction
-- Warm field-journal visual direction (cream / leaf green / honey amber)
-- Clean Home screen with live collection status
-- Explore Mode with multiple mock scenes (Cafe, Market, Hotel)
-- Mock detected words with stable ids
-- Tap-to-catch interaction with catch reveal (translation as the reward)
-- "Spotted again" micro-reward for already-caught words
-- Local persistence via SharedPreferences (`caughtIDs`, `seenCount`, `lastSeenAt`)
-- Dictionary built from actually caught words, grouped by category
-- Spotted-count and last-seen info per word
-- Lightweight Review flow (tap to reveal, self-assess, requeue)
-- Session summary flow (finish session → new vs. already-known words, review entry)
-- Session counter and collection feedback
+- Clean Home screen
+- Explore Mode
+- Dictionary screen
+- Mock detected words
+- Tap-to-catch interaction
+- Collected word state
+- Translation reveal after collection
+- Session counter
+- Collection feedback
 - Duplicate collection prevention
-- Central design system foundation and theme file
-- Reusable catch word chip and collection counter
-- Widget and unit tests for core MVP behavior
+- Central design system foundation
+- Central theme file
+- Reusable catch word chip
+- Reusable collection counter
+- Widget tests for core MVP behavior
 
 Example mock word:
 
@@ -91,7 +90,6 @@ chair -> kursi
 - Home
 - Explore Mode
 - My Dictionary
-- Review
 
 Older manual vocabulary prototype files may still exist in `lib/legacy/` as reference material. They are not the current product direction.
 
@@ -118,9 +116,12 @@ The product is the discovery experience.
 
 Near-term:
 
-- Polish catch animations and micro-interactions further
-- Sharpen Home screen identity (icon / branding with cat + AR corners)
-- Optional marker-tap variations in Explore
+- Make the catch moment feel satisfying
+- Make Explore Mode feel like a real camera-session preview
+- Improve Home screen identity
+- Improve Dictionary as a personal word memory
+- Add a simple session summary flow
+- Connect caught words more clearly to the Dictionary
 
 Later:
 
