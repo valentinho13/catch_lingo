@@ -478,4 +478,19 @@ class _CollectionStatusCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
- 
+                    caughtCount == 0
+                        ? 'Start a discovery session and catch your first word.'
+                        : 'Keep exploring — more words are out there.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: CatchLingoColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
