@@ -10,7 +10,9 @@ import 'explore_screen.dart';
 import 'home_screen.dart';
 
 class ReviewScreen extends StatefulWidget {
-  const ReviewScreen({super.key});
+  const ReviewScreen({super.key, this.initialWordId});
+
+  final String? initialWordId;
 
   @override
   State<ReviewScreen> createState() => _ReviewScreenState();
@@ -26,7 +28,29 @@ class _ReviewScreenState extends State<ReviewScreen> {
   @override
   void initState() {
     super.initState();
-    _wordsFuture = _storage.loadWords();
+    _wordsFuture = _loadReviewWords();
+  }
+
+  Future<List<CatchWord>> _loadReviewWords() async {
+    final words = await _storage.loadWords();
+    final initialWordId = widget.initialWordId;
+
+    if (initialWordId != null) {
+      final selectedIndex = words.indexWhere(
+        (word) => word.id == initialWordId,
+      );
+      if (selectedIndex > 0) {
+        final selectedWord = words.removeAt(selectedIndex);
+        words.insert(0, selectedWord);
+      }
+      return words;
+    }
+
+    if (words.any((word) => word.lastSeenAt != null)) {
+      words.sort(_compareForGentleReview);
+    }
+
+    return words;
   }
 
   Future<void> _openExplore() async {
@@ -41,7 +65,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     setState(() {
       _currentIndex = 0;
       _isAnswerVisible = false;
-      _wordsFuture = _storage.loadWords();
+      _wordsFuture = _loadReviewWords();
     });
   }
 
@@ -90,6 +114,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
             }
 
             final currentWord = words[_currentIndex % words.length];
+            final fadingCount = words.where(_isFadingWord).length;
 
             return ListView(
               padding: const EdgeInsets.fromLTRB(
@@ -119,7 +144,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 ),
                 const SizedBox(height: CatchLingoSpacing.xs),
                 Text(
-                  '${words.length} ready to remember',
+                  fadingCount == 0
+                      ? '${words.length} ready to remember'
+                      : '$fadingCount gently fading · ${words.length} ready',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: CatchLingoColors.textMuted,
                     fontWeight: FontWeight.w500,
@@ -136,6 +163,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   current: (_currentIndex % words.length) + 1,
                   total: words.length,
                   isAnswerVisible: _isAnswerVisible,
+                  isFading: _isFadingWord(currentWord),
                   onShowAnswer: _showAnswer,
                   onAgain: () => _moveNext(words),
                   onKnewIt: () => _moveNext(words),
@@ -164,6 +192,34 @@ class _ReviewScreenState extends State<ReviewScreen> {
         break;
     }
   }
+}
+
+int _compareForGentleReview(CatchWord a, CatchWord b) {
+  final aSeen = a.lastSeenAt;
+  final bSeen = b.lastSeenAt;
+
+  if (aSeen == null && bSeen == null) {
+    return 0;
+  }
+
+  if (aSeen == null) {
+    return 1;
+  }
+
+  if (bSeen == null) {
+    return -1;
+  }
+
+  return aSeen.compareTo(bSeen);
+}
+
+bool _isFadingWord(CatchWord word) {
+  final lastSeenAt = word.lastSeenAt;
+  if (lastSeenAt == null) {
+    return false;
+  }
+
+  return DateTime.now().difference(lastSeenAt).inDays >= 7;
 }
 
 class _ReviewProgress extends StatelessWidget {
@@ -266,6 +322,7 @@ class _ReviewCard extends StatelessWidget {
     required this.current,
     required this.total,
     required this.isAnswerVisible,
+    required this.isFading,
     required this.onShowAnswer,
     required this.onAgain,
     required this.onKnewIt,
@@ -275,6 +332,7 @@ class _ReviewCard extends StatelessWidget {
   final int current;
   final int total;
   final bool isAnswerVisible;
+  final bool isFading;
   final VoidCallback onShowAnswer;
   final VoidCallback onAgain;
   final VoidCallback onKnewIt;
@@ -332,7 +390,11 @@ class _ReviewCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 52),
+            if (isFading) ...[
+              const SizedBox(height: CatchLingoSpacing.sm),
+              Center(child: _FadingMemoryPill(word: word)),
+            ],
+            SizedBox(height: isFading ? 36 : 52),
             Text(
               word.translation,
               textAlign: TextAlign.center,
@@ -424,6 +486,50 @@ class _ReviewCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FadingMemoryPill extends StatelessWidget {
+  const _FadingMemoryPill({required this.word});
+
+  final CatchWord word;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+      decoration: BoxDecoration(
+        color: CatchLingoColors.amber.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.history_rounded,
+            size: 15,
+            color: CatchLingoColors.amber,
+          ),
+          const SizedBox(width: 5),
+          Text(
+            _fadingLabel(word.lastSeenAt),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: CatchLingoColors.textMuted,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _fadingLabel(DateTime? lastSeenAt) {
+  if (lastSeenAt == null) {
+    return 'Worth revisiting';
+  }
+
+  final days = DateTime.now().difference(lastSeenAt).inDays;
+  return 'Last spotted $days days ago';
 }
 
 class _ReviewObjectIcon extends StatelessWidget {

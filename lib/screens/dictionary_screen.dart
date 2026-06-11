@@ -90,8 +90,9 @@ class _DictionaryScreenState extends State<DictionaryScreen> {
             }
 
             final searchedWords = _filterWords(words);
-            final availableCategories = _groupWordsByCategory(searchedWords).keys
-                .toList();
+            final availableCategories = _groupWordsByCategory(
+              searchedWords,
+            ).keys.toList();
             final visibleWords = _filterWordsByCategory(searchedWords);
             final groupedWords = _groupWordsByCategory(visibleWords);
             final hasQuery = _searchQuery.trim().isNotEmpty;
@@ -629,77 +630,83 @@ class _DictionaryWordCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final category = _categoryLabel(word.category);
 
-    return Container(
-      padding: const EdgeInsets.all(CatchLingoSpacing.md),
-      decoration: BoxDecoration(
-        color: CatchLingoColors.warmSurface,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showWordDetail(context, word),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+        child: Ink(
+          padding: const EdgeInsets.all(CatchLingoSpacing.md),
+          decoration: BoxDecoration(
+            color: CatchLingoColors.warmSurface,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 14,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          _WordObjectBadge(word: word),
-          const SizedBox(width: CatchLingoSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              _WordObjectBadge(word: word),
+              const SizedBox(width: CatchLingoSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: RichText(
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        text: TextSpan(
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color: CatchLingoColors.textPrimary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                          children: [
-                            TextSpan(text: word.source),
-                            TextSpan(
-                              text: '   ${word.translation}',
-                              style: TextStyle(
-                                color: CatchLingoColors.textMuted.withValues(
-                                  alpha: 0.72,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RichText(
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            text: TextSpan(
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    color: CatchLingoColors.textPrimary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                              children: [
+                                TextSpan(text: word.source),
+                                TextSpan(
+                                  text: '   ${word.translation}',
+                                  style: TextStyle(
+                                    color: CatchLingoColors.textMuted
+                                        .withValues(alpha: 0.72),
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                                fontWeight: FontWeight.w500,
-                              ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$category · ${_lastSeenLabel(word.lastSeenAt)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: CatchLingoColors.textMuted,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '$category · ${_lastSeenLabel(word.lastSeenAt)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: CatchLingoColors.textMuted,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(width: CatchLingoSpacing.sm),
+              Icon(
+                Icons.bookmark_rounded,
+                color: CatchLingoColors.warmGreen,
+                size: 24,
+              ),
+            ],
           ),
-          const SizedBox(width: CatchLingoSpacing.sm),
-          Icon(
-            Icons.bookmark_rounded,
-            color: CatchLingoColors.warmGreen,
-            size: 24,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -721,6 +728,184 @@ class _DictionaryWordCard extends StatelessWidget {
 
     return 'Last spotted ${difference.inDays} days ago';
   }
+}
+
+void _showWordDetail(BuildContext context, CatchWord word) {
+  final category = _categoryLabel(word.category);
+
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: CatchLingoColors.warmSurface,
+    showDragHandle: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(
+        top: Radius.circular(CatchLingoRadius.panel),
+      ),
+    ),
+    builder: (sheetContext) {
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            CatchLingoSpacing.screen,
+            CatchLingoSpacing.sm,
+            CatchLingoSpacing.screen,
+            CatchLingoSpacing.screen,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _WordObjectBadge(word: word),
+                  const SizedBox(width: CatchLingoSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          word.source,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                color: CatchLingoColors.textPrimary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                        ),
+                        Text(
+                          word.translation,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: CatchLingoColors.warmGreen,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: CatchLingoSpacing.lg),
+              _WordDetailFactRow(
+                icon: Icons.category_rounded,
+                label: 'Category',
+                value: category,
+              ),
+              _WordDetailFactRow(
+                icon: Icons.visibility_rounded,
+                label: 'Sightings',
+                value: _seenCountLabel(word.seenCount),
+              ),
+              _WordDetailFactRow(
+                icon: Icons.schedule_rounded,
+                label: 'Last seen',
+                value: _lastSeenLabel(word.lastSeenAt),
+              ),
+              const SizedBox(height: CatchLingoSpacing.lg),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(sheetContext).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ReviewScreen(initialWordId: word.id),
+                    ),
+                  );
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: CatchLingoColors.warmGreen,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(50),
+                ),
+                icon: const Icon(Icons.style_rounded),
+                label: const Text('Review this word'),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _WordDetailFactRow extends StatelessWidget {
+  const _WordDetailFactRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: CatchLingoSpacing.sm),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: CatchLingoColors.amber.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, color: CatchLingoColors.warmGreen, size: 19),
+          ),
+          const SizedBox(width: CatchLingoSpacing.md),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: CatchLingoColors.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: CatchLingoSpacing.md),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: CatchLingoColors.textPrimary,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _seenCountLabel(int seenCount) {
+  final count = seenCount <= 0 ? 1 : seenCount;
+  return '$count ${count == 1 ? 'time' : 'times'}';
+}
+
+String _lastSeenLabel(DateTime? lastSeenAt) {
+  if (lastSeenAt == null) {
+    return 'Last spotted recently';
+  }
+
+  final difference = DateTime.now().difference(lastSeenAt);
+
+  if (difference.inDays == 0) {
+    return 'Last spotted today';
+  }
+
+  if (difference.inDays == 1) {
+    return 'Last spotted yesterday';
+  }
+
+  return 'Last spotted ${difference.inDays} days ago';
 }
 
 class _WordObjectBadge extends StatelessWidget {
