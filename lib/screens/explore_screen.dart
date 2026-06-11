@@ -6,6 +6,7 @@ import '../models/catch_word.dart';
 import '../services/collection_store.dart';
 import '../widgets/catch_word_chip.dart';
 import '../widgets/collection_counter.dart';
+import 'session_summary_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -19,13 +20,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   CollectionData _collection = const CollectionData.empty();
   int _sceneIndex = 0;
-  int _sessionCatchCount = 0;
+  final List<CatchWord> _sessionNewWords = [];
+  final List<CatchWord> _sessionSeenAgainWords = [];
   _LatestSpot? _latestSpot;
 
   MockScene get _scene => mockScenes[_sceneIndex];
 
   bool get _sceneComplete =>
       _scene.words.every((word) => _collection.isCaught(word.id));
+
+  int get _sessionCatchCount => _sessionNewWords.length;
+
+  bool get _hasSessionActivity =>
+      _sessionNewWords.isNotEmpty || _sessionSeenAgainWords.isNotEmpty;
 
   @override
   void initState() {
@@ -47,7 +54,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
     setState(() {
       _collection = data;
       if (outcome.isNewCatch) {
-        _sessionCatchCount += 1;
+        _sessionNewWords.add(word);
+      } else if (!_sessionNewWords.any((w) => w.id == word.id) &&
+          !_sessionSeenAgainWords.any((w) => w.id == word.id)) {
+        _sessionSeenAgainWords.add(word);
       }
       _latestSpot = _LatestSpot(word: word, outcome: outcome);
     });
@@ -58,6 +68,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
       _sceneIndex = (_sceneIndex + 1) % mockScenes.length;
       _latestSpot = null;
     });
+  }
+
+  void _finishSession() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => SessionSummaryScreen(
+          newWords: List.unmodifiable(_sessionNewWords),
+          seenAgainWords: List.unmodifiable(_sessionSeenAgainWords),
+        ),
+      ),
+    );
   }
 
   @override
@@ -123,6 +144,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
               sceneComplete: _sceneComplete,
               onNextScene: _nextScene,
             ),
+            if (_hasSessionActivity) ...[
+              const SizedBox(height: CatchLingoSpacing.lg),
+              FilledButton.tonalIcon(
+                onPressed: _finishSession,
+                icon: const Icon(Icons.flag_rounded),
+                label: const Text('Finish session'),
+              ),
+            ],
           ],
         ),
       ),
