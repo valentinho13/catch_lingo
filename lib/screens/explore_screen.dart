@@ -1290,7 +1290,7 @@ class _CatchCelebrationOverlay extends StatelessWidget {
                 color: Colors.black.withValues(alpha: 0.16),
               ),
             ),
-            const _CelebrationSparkles(),
+            const _CatchGlowPulse(),
             Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 330),
@@ -1300,9 +1300,9 @@ class _CatchCelebrationOverlay extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       _GentleMotion(
-                        scaleAmount: 0.045,
-                        yAmount: 3,
-                        duration: const Duration(milliseconds: 980),
+                        scaleAmount: 0.018,
+                        yAmount: 1.5,
+                        duration: const Duration(milliseconds: 1150),
                         child: Container(
                           width: 76,
                           height: 76,
@@ -1340,9 +1340,9 @@ class _CatchCelebrationOverlay extends StatelessWidget {
                       ),
                       const SizedBox(height: CatchLingoSpacing.md),
                       _GentleMotion(
-                        scaleAmount: 0.012,
-                        yAmount: 4,
-                        duration: const Duration(milliseconds: 1400),
+                        scaleAmount: 0.006,
+                        yAmount: 2,
+                        duration: const Duration(milliseconds: 1500),
                         child: Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(
@@ -1551,39 +1551,18 @@ class _RevisitToken extends StatelessWidget {
   }
 }
 
-class _CelebrationSparkles extends StatefulWidget {
-  const _CelebrationSparkles();
-
-  @override
-  State<_CelebrationSparkles> createState() => _CelebrationSparklesState();
-}
-
-class _CelebrationSparklesState extends State<_CelebrationSparkles>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1450),
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+class _CatchGlowPulse extends StatelessWidget {
+  const _CatchGlowPulse();
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 780),
+      curve: Curves.easeOutCubic,
+      builder: (context, progress, _) {
         return CustomPaint(
-          painter: _CelebrationSparklePainter(progress: _controller.value),
+          painter: _CatchGlowPainter(progress: progress.clamp(0.0, 1.0)),
           child: const SizedBox.expand(),
         );
       },
@@ -1591,116 +1570,43 @@ class _CelebrationSparklesState extends State<_CelebrationSparkles>
   }
 }
 
-class _CelebrationSparklePainter extends CustomPainter {
-  const _CelebrationSparklePainter({required this.progress});
+class _CatchGlowPainter extends CustomPainter {
+  const _CatchGlowPainter({required this.progress});
 
   final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final particles = <({Offset origin, double size, double drift})>[
-      (
-        origin: Offset(size.width * 0.18, size.height * 0.24),
-        size: 4.6,
-        drift: 18,
-      ),
-      (
-        origin: Offset(size.width * 0.78, size.height * 0.20),
-        size: 5.2,
-        drift: 24,
-      ),
-      (
-        origin: Offset(size.width * 0.14, size.height * 0.58),
-        size: 3.8,
-        drift: 22,
-      ),
-      (
-        origin: Offset(size.width * 0.83, size.height * 0.55),
-        size: 4.4,
-        drift: 20,
-      ),
-      (
-        origin: Offset(size.width * 0.32, size.height * 0.72),
-        size: 4.0,
-        drift: 18,
-      ),
-      (
-        origin: Offset(size.width * 0.67, size.height * 0.76),
-        size: 4.8,
-        drift: 22,
-      ),
-      (
-        origin: Offset(size.width * 0.48, size.height * 0.18),
-        size: 2.8,
-        drift: 26,
-      ),
-      (
-        origin: Offset(size.width * 0.90, size.height * 0.35),
-        size: 3.4,
-        drift: 18,
-      ),
-      (
-        origin: Offset(size.width * 0.08, size.height * 0.38),
-        size: 3.0,
-        drift: 16,
-      ),
-      (
-        origin: Offset(size.width * 0.74, size.height * 0.66),
-        size: 3.2,
-        drift: 20,
-      ),
-    ];
+    final center = Offset(size.width / 2, size.height * 0.42);
+    final longestSide = math.max(size.width, size.height);
+    final eased = Curves.easeOutCubic.transform(progress);
+    final fade = (1 - progress).clamp(0.0, 1.0);
+    final ringRadius = longestSide * (0.09 + eased * 0.18);
+    final haloRadius = longestSide * (0.18 + eased * 0.12);
 
-    for (var i = 0; i < particles.length; i++) {
-      final particle = particles[i];
-      final phase = progress * math.pi * 2 + i * 0.72;
-      final orbit = Offset(
-        math.cos(phase) * particle.drift,
-        math.sin(phase * 1.18) * particle.drift * 0.56,
-      );
-      final float = Offset(0, -10 * progress);
-      final center = particle.origin + orbit + float;
-      final pulse = (math.sin(phase * 1.7) + 1) / 2;
-      final radius = particle.size + pulse * 3.2;
-      final alpha = 0.34 + pulse * 0.44;
-      final color = i.isEven
-          ? CatchLingoColors.amber
-          : CatchLingoColors.successIcon;
-      final glowPaint = Paint()..color = color.withValues(alpha: alpha * 0.16);
-      final dotPaint = Paint()..color = color.withValues(alpha: alpha);
+    final haloPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          CatchLingoColors.warmGreen.withValues(alpha: 0.18 * fade),
+          CatchLingoColors.amber.withValues(alpha: 0.08 * fade),
+          Colors.transparent,
+        ],
+        stops: const [0, 0.52, 1],
+      ).createShader(Rect.fromCircle(center: center, radius: haloRadius));
 
-      canvas.drawCircle(center, radius * 3.2, glowPaint);
-      canvas.drawCircle(center, radius, dotPaint);
-      _drawSpark(canvas, center, radius * 2.1, color.withValues(alpha: alpha));
-    }
-  }
+    canvas.drawCircle(center, haloRadius, haloPaint);
 
-  void _drawSpark(Canvas canvas, Offset center, double length, Color color) {
     final paint = Paint()
-      ..color = color
-      ..strokeWidth = 1.4
+      ..color = CatchLingoColors.amber.withValues(alpha: 0.30 * fade)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawLine(
-      center.translate(-length, 0),
-      center.translate(length, 0),
-      paint,
-    );
-    canvas.drawLine(
-      center.translate(0, -length),
-      center.translate(0, length),
-      paint,
-    );
-    canvas.save();
-    canvas.translate(center.dx, center.dy);
-    canvas.rotate(math.pi / 4);
-    canvas.drawLine(Offset(-length * 0.55, 0), Offset(length * 0.55, 0), paint);
-    canvas.drawLine(Offset(0, -length * 0.55), Offset(0, length * 0.55), paint);
-    canvas.restore();
+    canvas.drawCircle(center, ringRadius, paint);
   }
 
   @override
-  bool shouldRepaint(covariant _CelebrationSparklePainter oldDelegate) {
+  bool shouldRepaint(covariant _CatchGlowPainter oldDelegate) {
     return oldDelegate.progress != progress;
   }
 }
