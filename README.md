@@ -57,22 +57,24 @@ Every feature should strengthen this loop.
 
 ## Current MVP
 
-The app currently focuses on proving that catching a word can feel satisfying before adding real camera and object-detection features.
+The app currently focuses on making real-world word discovery feel good with a
+real camera preview and mock detections over that preview.
 
 Implemented so far:
 
 - Flutter / Material 3 app structure
 - Android-first MVP direction
-- Clean Home screen
-- Explore Mode
-- Dictionary screen
-- Mock detected words
+- Warm Home screen with cat branding
+- Explore Mode with real camera preview
+- Camera permission through the Flutter camera plugin
+- Mock detected words over the camera
 - Tap-to-catch interaction
 - Collected word state
 - Translation reveal after collection
 - Session counter
 - Collection feedback
 - Duplicate collection prevention
+- Bottom navigation for Discover / Dictionary / Review
 - Central design system foundation
 - Central theme file
 - Reusable catch word chip
@@ -87,9 +89,10 @@ chair -> kursi
 
 ## Current Screens
 
-- Home
-- Explore Mode
-- My Dictionary
+- Home / Discover
+- Explore Mode with camera preview
+- Dictionary
+- Review
 
 Older manual vocabulary prototype files may still exist in `lib/legacy/` as reference material. They are not the current product direction.
 
@@ -97,7 +100,6 @@ Older manual vocabulary prototype files may still exist in `lib/legacy/` as refe
 
 These are intentionally not part of the current MVP step:
 
-- real camera integration
 - ML Kit
 - real object detection
 - cloud sync
@@ -116,16 +118,13 @@ The product is the discovery experience.
 
 Near-term:
 
-- Make the catch moment feel satisfying
-- Make Explore Mode feel like a real camera-session preview
-- Improve Home screen identity
+- Polish camera loading and permission fallback
+- Make the catch moment feel even more satisfying without heavy effects
 - Improve Dictionary as a personal word memory
-- Add a simple session summary flow
-- Connect caught words more clearly to the Dictionary
+- Keep storage compatible with existing caught-word data
 
 Later:
 
-- Camera preview and permissions
 - Real object detection
 - Real vocabulary collection
 - Local storage for sessions and collected words

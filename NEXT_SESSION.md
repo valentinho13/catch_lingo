@@ -1,55 +1,166 @@
-# Next Session — Handoff (Stand 2026-06-11, Head 53a4cc8)
+# Next Session - Handoff (2026-06-12)
 
-Kurzes Briefing für die nächste Arbeitssession (Codex / Claude / Mensch).
+This file exists to prevent a repeat of the 2026-06-11 evening incident.
 
-## Was zuletzt passiert ist
+## Critical Recovery Context
 
-Zwei große Arbeitspakete, alles committed und verifiziert:
+The real app state with camera preview was temporarily lost from `main`.
+The phone APK still showed the correct app because it had been built from a
+dangling Git tree, not from the then-current `HEAD`.
 
-1. Warm-Theme-Migration (Creme/Blattgrün/Honig-Amber, Scanner-Look entfernt),
-   Persistenz (`CollectionStore`, SharedPreferences), Catch-Reveal,
-   Seen-Again-Mikro-Belohnung, 3 Mock-Szenen, echtes Dictionary,
-   minimaler Review-Screen.
-2. Session Summary (Finish session → Reward-Screen mit neu/bekannt-Split),
-   Catch-Pop (easeOutBack), Doku- und Roadmap-Abgleich.
+Recovered and committed:
 
-Details: `CHANGELOG.md`. Aktueller Fokus: `AGENTS.md` → "Current Product Focus".
+- `4451fa4 restore camera discovery app state`
+- `6496ce3 harden caught word storage fallback`
+- `231768f refresh home after secondary flows`
 
-## Zuerst tun (Pflicht)
+Do not roll back past `4451fa4` unless the user explicitly asks.
 
-```
+## Current Real App State
+
+The actual product now includes:
+
+- Home screen with cat hero, app icon assets, stats, categories
+- Bottom navigation: Discover / Dictionary / Review
+- Explore screen with real camera preview via `camera`
+- Camera permission flow handled by the camera plugin
+- Warm full-screen camera overlay
+- Mock detections over the camera
+- Tap-to-catch with translation reveal
+- Catch celebration overlay
+- Dictionary fed from caught words
+- Review flow
+- Storage in `CaughtWordStorage`
+
+## Storage Warning
+
+Persisted data matters.
+
+Current storage writes:
+
+- `catch_lingo_caught_words`
+- `caughtIDs`
+- `seenCount`
+- `lastSeenAt`
+
+Never remove or rename these keys without a migration.
+
+`CaughtWordStorage` can now recover from older stable keys if the rich JSON key
+is missing or corrupt. Keep that fallback.
+
+## Before Any Work Tomorrow
+
+Run:
+
+```powershell
+git status --short
+git log --oneline --max-count=8
 flutter analyze
 flutter test
 ```
 
-Beides wurde zuletzt NICHT ausgeführt (kein Flutter SDK in der Agent-Sandbox).
-Der Code wurde nur manuell + per Syntax-Checker geprüft. Etwaige Analyzer-
-Findings oder Test-Fehler zuerst fixen, bevor neue Features entstehen.
+Confirm `HEAD` is at or after:
 
-## Danach, in dieser Reihenfolge
+```text
+4451fa4 restore camera discovery app state
+```
 
-1. **App-Icon / Branding** — Katze + AR-Ecken, warm, nicht kindisch.
-2. **Catch-Moment weiter polieren** — nur subtile, performante Effekte.
+Confirm these files exist:
 
-(Das Wort-Detail-Bottom-Sheet im Dictionary ist bereits umgesetzt.)
+```text
+lib/screens/explore_screen.dart
+lib/data/caught_word_storage.dart
+lib/data/detection_service.dart
+lib/widgets/catch_lingo_bottom_nav.dart
+assets/images/welcome_cat.png
+```
 
-Nicht bauen: Kamera, ML Kit, Cloud, Accounts, Spaced Repetition, Bottom-Nav.
+Confirm `pubspec.yaml` still contains:
 
-## Nicht kaputt machen
+```yaml
+camera: ^0.12.0+1
+```
 
-- SharedPreferences-Keys `caughtIDs`, `seenCount`, `lastSeenAt` und die
-  `CatchWord.id`-Werte (z. B. `cafe.coffee`) sind persistierte Daten —
-  nie ohne Migration ändern.
-- Warme Palette ist gelockt (`lib/app/app_theme.dart` = Quelle der Wahrheit,
-  Doku in `DESIGN_SYSTEM.md`). Kein Indigo/Teal, kein Dark-HUD.
-- Wörter speichern sofort beim Fang. Keine "Save"-Buttons einführen.
-- Tests in `test/` nach Änderungen mitziehen.
+## Do Not Repeat
 
-## Architektur in 30 Sekunden
+Do not trust an old agent report over the actual code.
 
-- `lib/app/` Theme + App-Shell · `lib/models/catch_word.dart` Wortmodell
-- `lib/data/mock_catch_words.dart` Szenen + Icon-Mapping
-- `lib/services/collection_store.dart` Persistenz (einzige Storage-Stelle)
-- `lib/screens/` home, explore, session_summary, dictionary, review
-- `lib/widgets/` catch_word_chip, collection_counter
-- `lib/legacy/` alter Prototyp, nicht anfassen, nicht referenziert
+Do not delete `build/` or reset branches just to "clean up" unless the user asks.
+If a cleanup is needed, explain exactly what generated files are being removed.
+
+Do not use:
+
+```powershell
+git reset --hard
+git clean -fdx
+git read-tree --reset -u ...
+```
+
+unless the user explicitly approves that exact recovery operation.
+
+Do not replace the camera app with the older mock-only Explore UI.
+
+Do not remove bottom navigation, cat branding, camera preview, or app icon assets
+as "cleanup".
+
+Do not remove `.codex-remote-attachments` manually; those are user-provided
+screenshots and should remain untracked.
+
+## If The App On Phone Differs From HEAD
+
+First suspect stale APK/build artifacts or a lost dangling Git tree.
+
+Useful checks:
+
+```powershell
+Get-Item build\app\outputs\flutter-apk\app-debug.apk
+git fsck --lost-found --no-reflogs
+```
+
+To search dangling trees for the camera UI:
+
+```powershell
+$trees = git fsck --lost-found --no-reflogs 2>$null |
+  Where-Object { $_ -match '^dangling tree ' } |
+  ForEach-Object { ($_ -split ' ')[2] }
+
+foreach ($tree in $trees) {
+  $hit = git grep -n -I -E "Good morning|Something here|Look around|Found it|English hidden|CameraPreview" $tree -- 2>$null
+  if ($hit) {
+    Write-Output "TREE $tree"
+    $hit | Select-Object -First 20
+  }
+}
+```
+
+Inspect before restoring. Do not blindly apply a dangling tree.
+
+## Sensible Next Work
+
+Work in small commits.
+
+Good next steps:
+
+- Polish permission denied / retry copy and layout
+- Improve camera loading state
+- Keep catch animation performant and warm
+- Add tests around storage migration and navigation refresh
+- Build a fresh APK after meaningful camera work:
+
+```powershell
+flutter build apk --debug
+```
+
+Then verify the timestamp:
+
+```powershell
+Get-Item build\app\outputs\flutter-apk\app-debug.apk
+```
+
+## Current Checks
+
+As of this handoff:
+
+- `flutter analyze` passes
+- `flutter test` passes
+

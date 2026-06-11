@@ -82,19 +82,14 @@ Avoid:
 
 The current focus is:
 
-- Home screen
-- Explore Mode
-- Dictionary
-- mock word detection
-- tap-to-catch
-- translation reveal
-- session counter
-- catch feedback
-- dictionary preview
+- protecting the recovered camera-based app state
+- polishing Explore camera UX without rebuilding it
+- preserving the cat/Home identity and bottom navigation
+- keeping tap-to-catch, translation reveal, Dictionary, and Review tight
+- improving storage safety around caught words
 
 The current focus is not:
 
-- camera
 - ML Kit
 - cloud sync
 - accounts
@@ -141,9 +136,11 @@ The camera is important, but the camera is not the product.
 
 The product is the real-world word discovery experience.
 
-Do not build camera functionality until requested.
+Camera preview already exists in the recovered app state. Do not remove,
+replace, or downgrade it to a mock-only Explore screen.
 
-Mock Explore Mode should still feel like a preview of future camera-based discovery.
+Mock detections may appear over the real camera preview until object detection
+exists.
 
 ## Catch Moment Principle
 
@@ -193,7 +190,14 @@ If tests are updated, explain why.
 
 Do not add new packages unless necessary.
 
-Do not implement camera, ML Kit, cloud, accounts, or advanced review unless specifically requested.
+Do not remove the existing camera preview, bottom navigation, cat branding, app
+icon assets, or caught-word storage.
+
+Do not implement ML Kit, cloud, accounts, or advanced review unless specifically requested.
+
+Do not run destructive Git cleanup or reset commands unless explicitly approved
+by the user. The camera app was recovered from a dangling tree after a previous
+reset/delete incident.
 
 Do not turn CatchLingo into a generic vocabulary manager.
 
