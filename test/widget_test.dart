@@ -1,5 +1,6 @@
 import 'package:catch_lingo/app/catch_lingo_app.dart';
 import 'package:catch_lingo/data/mock_catch_words.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -45,6 +46,37 @@ void main() {
       mockCatchWords.any((word) => tester.any(find.text(word.translation))),
       isTrue,
     );
+  });
+
+  testWidgets('shows session summary when ending explore after a catch', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+
+    await tester.pumpWidget(const CatchLingoApp());
+
+    await tester.scrollUntilVisible(find.text('Start Exploring'), 160);
+    await tester.tap(find.text('Start Exploring'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1200));
+
+    await tester.tap(find.text('Catch'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 2300));
+
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Good finds'), findsOneWidget);
+    expect(find.text('Review these words'), findsOneWidget);
+
+    await tester.tap(find.text('Review these words'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Remember'), findsOneWidget);
+    expect(find.text('English hidden'), findsOneWidget);
   });
 
   testWidgets('reviews saved caught words one card at a time', (tester) async {

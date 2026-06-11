@@ -11,6 +11,7 @@ import '../data/detection_service.dart';
 import '../data/mock_catch_words.dart';
 import '../models/catch_word.dart';
 import '../widgets/word_visuals.dart';
+import 'review_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -299,6 +300,18 @@ class _ExploreScreenState extends State<ExploreScreen>
     _completeSession();
   }
 
+  void _reviewSessionWords() {
+    final initialWordId = _sessionCaught.isEmpty
+        ? null
+        : _sessionCaught.first.id;
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => ReviewScreen(initialWordId: initialWordId),
+      ),
+    );
+  }
+
   void _continueAfterSession() {
     setState(() {
       _sessionComplete = false;
@@ -410,6 +423,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                   words: _sessionCaught,
                   knownSeen: _sessionKnownSeen,
                   onContinue: _continueAfterSession,
+                  onReview: _sessionCaught.isEmpty ? null : _reviewSessionWords,
                   onExit: () => Navigator.of(context).pop(),
                 ),
               ),
@@ -1777,12 +1791,14 @@ class _SessionCompleteOverlay extends StatelessWidget {
     required this.words,
     required this.knownSeen,
     required this.onContinue,
+    required this.onReview,
     required this.onExit,
   });
 
   final List<CatchWord> words;
   final int knownSeen;
   final VoidCallback onContinue;
+  final VoidCallback? onReview;
   final VoidCallback onExit;
 
   @override
@@ -1912,12 +1928,29 @@ class _SessionCompleteOverlay extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: CatchLingoSpacing.lg),
+                if (onReview != null) ...[
+                  FilledButton.icon(
+                    onPressed: onReview,
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      backgroundColor: CatchLingoColors.warmGreen,
+                      foregroundColor: Colors.white,
+                    ),
+                    icon: const Icon(Icons.style_rounded),
+                    label: const Text('Review these words'),
+                  ),
+                  const SizedBox(height: CatchLingoSpacing.sm),
+                ],
                 FilledButton(
                   onPressed: onContinue,
                   style: FilledButton.styleFrom(
                     minimumSize: const Size.fromHeight(52),
-                    backgroundColor: CatchLingoColors.warmGreen,
-                    foregroundColor: Colors.white,
+                    backgroundColor: onReview == null
+                        ? CatchLingoColors.warmGreen
+                        : CatchLingoColors.warmSurface,
+                    foregroundColor: onReview == null
+                        ? Colors.white
+                        : CatchLingoColors.warmGreen,
                   ),
                   child: const Text('Keep exploring'),
                 ),
