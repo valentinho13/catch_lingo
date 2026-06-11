@@ -644,4 +644,74 @@ class _SceneCompleteFooter extends StatelessWidget {
       children: [
         Expanded(
           child: Text(
-         
+            'Scene complete — every word here is yours.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: CatchLingoColors.successText,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+        TextButton.icon(
+          onPressed: onNextScene,
+          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+          label: const Text('Next scene'),
+          style: TextButton.styleFrom(
+            foregroundColor: CatchLingoColors.successText,
+            textStyle: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SeenAgainCard extends StatelessWidget {
+  const _SeenAgainCard({super.key, required this.word, required this.seenCount});
+
+  final CatchWord word;
+  final int seenCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(CatchLingoSpacing.lg),
+      decoration: BoxDecoration(
+        color: CatchLingoColors.amberSurface,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+        border: Border.all(
+          color: CatchLingoColors.amberAccent.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.visibility_rounded,
+            color: CatchLingoColors.amberText,
+          ),
+          const SizedBox(width: CatchLingoSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${word.translation} — you know this one!',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: CatchLingoColors.amberText,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: CatchLingoSpacing.xs),
+                Text(
+                  'Spotted $seenCount× · already in your journal',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: CatchLingoColors.amberText.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
