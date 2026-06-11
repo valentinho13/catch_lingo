@@ -1,11 +1,6 @@
+/// A word that can be discovered and caught in the real world.
+///
+/// [id] is the stable identity used for persistence — never change ids of
+/// shipped words without a migration.
 class CatchWord {
-  const CatchWord({
-    required this.source,
-    required this.translation,
-    required this.category,
-  });
-
-  final String source;
-  final String translation;
-  final String category;
-}
+  const CatchWord

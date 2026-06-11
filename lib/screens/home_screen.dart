@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../app/app_theme.dart';
+import '../services/collection_store.dart';
 import 'dictionary_screen.dart';
 import 'explore_screen.dart';
 
@@ -14,6 +15,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  final CollectionStore _store = CollectionStore();
+  int _caughtCount = 0;
 
   @override
   void initState() {
@@ -22,6 +25,20 @@ class _HomeScreenState extends State<HomeScreen>
       vsync: this,
       duration: CatchLingoMotion.homeIntro,
     )..forward();
+    _loadCollection();
+  }
+
+  Future<void> _loadCollection() async {
+    final data = await _store.load();
+    if (!mounted) return;
+    setState(() => _caughtCount = data.caughtIds.length);
+  }
+
+  Future<void> _open(Widget screen) async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => screen));
+    _loadCollection();
   }
 
   @override
@@ -39,9 +56,9 @@ class _HomeScreenState extends State<HomeScreen>
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFF8FAFF),
+              Color(0xFFFDFBF2),
               CatchLingoColors.background,
-              Color(0xFFEFF8F6),
+              Color(0xFFF3EFDF),
             ],
           ),
         ),
@@ -90,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen>
                 animation: _controller,
                 begin: 0.30,
                 end: 0.78,
-                child: const _CollectionStatusCard(),
+                child: _CollectionStatusCard(caughtCount: _caughtCount),
               ),
               const SizedBox(height: CatchLingoSpacing.xl),
               _HomeEntry(
@@ -98,11 +115,7 @@ class _HomeScreenState extends State<HomeScreen>
                 begin: 0.42,
                 end: 0.92,
                 child: FilledButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ExploreScreen()),
-                    );
-                  },
+                  onPressed: () => _open(const ExploreScreen()),
                   icon: const Icon(Icons.travel_explore_rounded),
                   label: const Text('Start Exploring'),
                 ),
@@ -113,13 +126,7 @@ class _HomeScreenState extends State<HomeScreen>
                 begin: 0.52,
                 end: 1,
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const DictionaryScreen(),
-                      ),
-                    );
-                  },
+                  onPressed: () => _open(const DictionaryScreen()),
                   icon: const Icon(Icons.menu_book_rounded),
                   label: const Text('My Dictionary'),
                 ),
@@ -179,7 +186,7 @@ class _HeroMark extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFFFFFF), Color(0xFFEFF4FF), Color(0xFFEAF8F5)],
+          colors: [Color(0xFFFFFEF8), Color(0xFFF7F1DE), Color(0xFFEDF2E0)],
         ),
         border: Border.all(color: Colors.white.withValues(alpha: 0.86)),
         boxShadow: [
@@ -212,7 +219,7 @@ class _HeroMark extends StatelessWidget {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [CatchLingoColors.seed, CatchLingoColors.tealAccent],
+                  colors: [CatchLingoColors.seed, CatchLingoColors.amberAccent],
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -412,7 +419,9 @@ class _MiniWordChip extends StatelessWidget {
 }
 
 class _CollectionStatusCard extends StatelessWidget {
-  const _CollectionStatusCard();
+  const _CollectionStatusCard({required this.caughtCount});
+
+  final int caughtCount;
 
   @override
   Widget build(BuildContext context) {
@@ -420,7 +429,7 @@ class _CollectionStatusCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: CatchLingoColors.card,
         borderRadius: BorderRadius.circular(CatchLingoRadius.card),
         border: Border.all(color: Colors.white),
         boxShadow: [
@@ -460,24 +469,13 @@ class _CollectionStatusCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'No words collected yet.',
+                    caughtCount == 0
+                        ? 'No words caught yet.'
+                        : '$caughtCount ${caughtCount == 1 ? 'word' : 'words'} in your journal.',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    'Start a discovery session and catch your first word.',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+ 

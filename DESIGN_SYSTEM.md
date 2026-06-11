@@ -154,22 +154,24 @@ Suggested values:
 
 ### Color System
 
-Base:
+CatchLingo uses a warm field-journal palette: cream paper, leaf green, honey amber.
 
-- primary: indigo / blue-violet
-- secondary: teal / cyan-green
-- success: soft green
-- warning: amber
-- surface: white / near-white
-- background: very light cool gray
+This direction is locked. The earlier cool indigo/teal "scanner" look is retired — do not reintroduce it, and do not drift toward dark cyber-HUD optics.
+
+Base (see `lib/app/app_theme.dart` for the canonical tokens):
+
+- primary: leaf green (`#3F6B4A` seed)
+- accent: honey amber (`#D99A2B`)
+- success: soft warm green
+- surface: warm near-white (`#FFFDF6`)
+- background: warm cream paper (`#FAF6EB`)
+- text: warm dark brown-green / muted warm gray
 
 Use color semantically:
 
-- primary = main action / exploration
-- teal/green = caught / success
-- lavender = discovery / suggestion
-- gray = inactive / already known
-- amber = review / needs attention
+- green = main action / exploration / caught / success
+- amber = review / "spotted again" micro-reward / needs attention
+- muted warm gray = inactive / already known
 
 Avoid loud rainbow palettes.
 

@@ -1,10 +1,17 @@
+import 'package:flutter/material.dart';
+
 import '../models/catch_word.dart';
 
-const mockSceneName = 'Cafe table';
+/// A mock discovery scene — a preview of a future camera session.
+class MockScene {
+  const MockScene({required this.name, required this.words});
 
-const mockCatchWords = [
-  CatchWord(source: 'coffee', translation: 'kopi', category: 'Cafe'),
-  CatchWord(source: 'cup', translation: 'cangkir', category: 'Cafe'),
-  CatchWord(source: 'table', translation: 'meja', category: 'Cafe'),
-  CatchWord(source: 'chair', translation: 'kursi', category: 'Cafe'),
-];
+  final String name;
+  final List<CatchWord> words;
+}
+
+const mockScenes = [
+  MockScene(
+    name: 'Cafe table',
+    words: [
+      CatchWord(id: 'cafe.coffee', so

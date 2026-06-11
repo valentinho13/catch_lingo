@@ -1,18 +1,36 @@
 import 'package:flutter/material.dart';
 
+/// CatchLingo warm field-journal palette.
+///
+/// Locked direction: cream paper, leaf green, honey amber.
+/// The cool indigo/teal "scanner" look is retired — do not reintroduce it.
 class CatchLingoColors {
   const CatchLingoColors._();
 
-  static const seed = Color(0xFF5B5FEF);
-  static const background = Color(0xFFF4F7FB);
-  static const textPrimary = Color(0xFF202338);
-  static const textMuted = Color(0xFF6D7282);
-  static const discoverySurface = Color(0xFFEFF4FF);
-  static const tealAccent = Color(0xFF37BFA6);
-  static const successSurface = Color(0xFFE5F7EF);
-  static const successBorder = Color(0xFF65C99A);
-  static const successText = Color(0xFF145C3F);
-  static const successIcon = Color(0xFF168657);
+  /// Leaf green. Seed for the Material 3 scheme and main action color.
+  static const seed = Color(0xFF3F6B4A);
+
+  /// Warm cream paper background.
+  static const background = Color(0xFFFAF6EB);
+
+  /// Warm near-white for cards.
+  static const card = Color(0xFFFFFDF6);
+
+  static const textPrimary = Color(0xFF2F2C20);
+  static const textMuted = Color(0xFF7A745F);
+
+  /// Parchment surface for discovery panels.
+  static const discoverySurface = Color(0xFFF4EEDD);
+
+  /// Honey amber accent — used sparingly for celebration and review hints.
+  static const amberAccent = Color(0xFFD99A2B);
+  static const amberSurface = Color(0xFFF9EFD8);
+  static const amberText = Color(0xFF7A5614);
+
+  static const successSurface = Color(0xFFE9F2E2);
+  static const successBorder = Color(0xFF8FBC83);
+  static const successText = Color(0xFF2C5230);
+  static const successIcon = Color(0xFF3E7A47);
 }
 
 class CatchLingoSpacing {
@@ -43,6 +61,7 @@ class CatchLingoMotion {
   static const chip = Duration(milliseconds: 180);
   static const state = Duration(milliseconds: 220);
   static const feedback = Duration(milliseconds: 240);
+  static const reveal = Duration(milliseconds: 320);
   static const homeIntro = Duration(milliseconds: 760);
 }
 
@@ -67,8 +86,8 @@ class CatchLingoTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: Colors.white,
-        surfaceTintColor: Colors.white,
+        color: CatchLingoColors.card,
+        surfaceTintColor: CatchLingoColors.card,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(CatchLingoRadius.card),
@@ -94,7 +113,7 @@ class CatchLingoTheme {
       ),
       chipTheme: const ChipThemeData(
         shape: StadiumBorder(),
-        side: BorderSide(color: Color(0xFFE2E5F2)),
+        side: BorderSide(color: Color(0xFFE6DEC8)),
       ),
       useMaterial3: true,
     );

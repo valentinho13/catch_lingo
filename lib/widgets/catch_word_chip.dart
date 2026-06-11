@@ -142,7 +142,7 @@ class _CaughtContent extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: const Color(0xFF31765A),
+                  color: CatchLingoColors.successIcon,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -152,4 +152,3 @@ class _CaughtContent extends StatelessWidget {
       ],
     );
   }
-}

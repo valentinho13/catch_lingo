@@ -80,24 +80,24 @@ Prefer:
 
 ## Color Direction
 
-The MVP can use a simple seed color system.
+CatchLingo uses a warm field-journal palette. This direction is locked.
 
-Suggested direction:
-
-- primary: indigo / blue-violet
-- secondary: teal / green-blue
-- success: soft green
-- background: white / near-white
-- surface: soft elevated cards
-- dark mode later: deep navy / charcoal
+- primary: leaf green (`#3F6B4A` seed)
+- accent: honey amber (`#D99A2B`) — used sparingly
+- background: warm cream paper (`#FAF6EB`)
+- surface: warm near-white cards (`#FFFDF6`)
+- text: warm dark brown-green, muted warm gray
 
 Semantic color use:
 
-- primary: exploration and main action
-- green: caught / success
-- amber: review / attention
-- muted gray: known / inactive
-- soft lavender: discovery / suggestion
+- green: exploration, main action, caught / success
+- amber: review, "spotted again" micro-rewards, attention
+- muted warm gray: known / inactive
+
+Retired directions — do not reintroduce:
+
+- cool indigo / blue-violet / teal scanner look
+- dark cyber-HUD optics
 
 Avoid overly saturated toy colors.
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app/app_theme.dart';
 import '../data/mock_catch_words.dart';
 import '../models/catch_word.dart';
+import '../services/collection_store.dart';
 import '../widgets/catch_word_chip.dart';
 import '../widgets/collection_counter.dart';
 
@@ -14,23 +15,48 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class _ExploreScreenState extends State<ExploreScreen> {
-  final Set<String> _collectedWords = {};
-  CatchWord? _latestCollectedWord;
-  String? _duplicateMessage;
+  final CollectionStore _store = CollectionStore();
 
-  void _collectWord(CatchWord word) {
-    if (_collectedWords.contains(word.source)) {
-      setState(() {
-        _duplicateMessage = '${word.translation} is already in this scene.';
-        _latestCollectedWord = word;
-      });
-      return;
-    }
+  CollectionData _collection = const CollectionData.empty();
+  int _sceneIndex = 0;
+  int _sessionCatchCount = 0;
+  _LatestSpot? _latestSpot;
+
+  MockScene get _scene => mockScenes[_sceneIndex];
+
+  bool get _sceneComplete =>
+      _scene.words.every((word) => _collection.isCaught(word.id));
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCollection();
+  }
+
+  Future<void> _loadCollection() async {
+    final data = await _store.load();
+    if (!mounted) return;
+    setState(() => _collection = data);
+  }
+
+  Future<void> _spotWord(CatchWord word) async {
+    final outcome = await _store.recordSpot(word.id);
+    final data = await _store.load();
+    if (!mounted) return;
 
     setState(() {
-      _collectedWords.add(word.source);
-      _latestCollectedWord = word;
-      _duplicateMessage = null;
+      _collection = data;
+      if (outcome.isNewCatch) {
+        _sessionCatchCount += 1;
+      }
+      _latestSpot = _LatestSpot(word: word, outcome: outcome);
+    });
+  }
+
+  void _nextScene() {
+    setState(() {
+      _sceneIndex = (_sceneIndex + 1) % mockScenes.length;
+      _latestSpot = null;
     });
   }
 
@@ -38,15 +64,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Explore Mode'),
+        title: const Text('Explore'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: CatchLingoSpacing.lg),
             child: Center(
-              child: CollectionCounter(
-                count: _collectedWords.length,
-                compact: true,
-              ),
+              child: CollectionCounter(count: _sessionCatchCount, compact: true),
             ),
           ),
         ],
@@ -62,29 +85,43 @@ class _ExploreScreenState extends State<ExploreScreen> {
           children: [
             Text(
               'Discovery preview',
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(color: Colors.black54),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: CatchLingoColors.textMuted,
+              ),
             ),
             const SizedBox(height: CatchLingoSpacing.xs),
-            Text(
-              mockSceneName,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    _scene.name,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                _NextSceneButton(onTap: _nextScene),
+              ],
             ),
             const SizedBox(height: CatchLingoSpacing.md),
-            _SceneDiscoveryPanel(
-              words: mockCatchWords,
-              collectedWords: _collectedWords,
-              onCatch: _collectWord,
+            AnimatedSwitcher(
+              duration: CatchLingoMotion.reveal,
+              switchInCurve: Curves.easeOutCubic,
+              child: _SceneDiscoveryPanel(
+                key: ValueKey('scene-$_sceneIndex'),
+                words: _scene.words,
+                collection: _collection,
+                onSpot: _spotWord,
+              ),
             ),
             const SizedBox(height: CatchLingoSpacing.lg),
-            CollectionCounter(count: _collectedWords.length),
+            CollectionCounter(count: _sessionCatchCount),
             const SizedBox(height: CatchLingoSpacing.md),
             _LatestDiscoveryPanel(
-              word: _latestCollectedWord,
-              duplicateMessage: _duplicateMessage,
+              spot: _latestSpot,
+              sceneComplete: _sceneComplete,
+              onNextScene: _nextScene,
             ),
           ],
         ),
@@ -93,16 +130,72 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 }
 
+class _LatestSpot {
+  const _LatestSpot({required this.word, required this.outcome});
+
+  final CatchWord word;
+  final SpotOutcome outcome;
+}
+
+class _NextSceneButton extends StatelessWidget {
+  const _NextSceneButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Material(
+      color: colorScheme.secondaryContainer,
+      borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.switch_camera_rounded,
+                size: 16,
+                color: colorScheme.onSecondaryContainer,
+              ),
+              const SizedBox(width: CatchLingoSpacing.sm),
+              Text(
+                'Next scene',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: colorScheme.onSecondaryContainer,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SceneDiscoveryPanel extends StatelessWidget {
   const _SceneDiscoveryPanel({
+    super.key,
     required this.words,
-    required this.collectedWords,
-    required this.onCatch,
+    required this.collection,
+    required this.onSpot,
   });
 
   final List<CatchWord> words;
-  final Set<String> collectedWords;
-  final ValueChanged<CatchWord> onCatch;
+  final CollectionData collection;
+  final ValueChanged<CatchWord> onSpot;
+
+  static const _chipAlignments = [
+    Alignment(-0.92, -0.10),
+    Alignment(0.92, -0.24),
+    Alignment(-0.92, 0.60),
+    Alignment(0.92, 0.48),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +208,7 @@ class _SceneDiscoveryPanel extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFFFFFFF), Color(0xFFF1F5FF), Color(0xFFE7F8F5)],
+          colors: [Color(0xFFFFFEF8), Color(0xFFF6F0DD), Color(0xFFEDF2E0)],
         ),
         borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
         border: Border.all(color: Colors.white.withValues(alpha: 0.92)),
@@ -142,7 +235,7 @@ class _SceneDiscoveryPanel extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'Scanning scene',
+                  'Words live here',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
@@ -151,42 +244,28 @@ class _SceneDiscoveryPanel extends StatelessWidget {
                 ),
                 const SizedBox(height: CatchLingoSpacing.xs),
                 Text(
-                  'Tap a marker',
+                  'Tap a marker to catch one',
                   textAlign: TextAlign.center,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: CatchLingoColors.textMuted,
+                  ),
                 ),
               ],
             ),
           ),
           const Positioned.fill(child: _SceneVignette()),
-          const Positioned.fill(child: _ScanSurface()),
           const Positioned.fill(child: _LensFrame()),
-          _PositionedObjectChip(
-            alignment: const Alignment(-0.92, -0.10),
-            word: words[0],
-            isCollected: collectedWords.contains(words[0].source),
-            onTap: () => onCatch(words[0]),
-          ),
-          _PositionedObjectChip(
-            alignment: const Alignment(0.92, -0.24),
-            word: words[1],
-            isCollected: collectedWords.contains(words[1].source),
-            onTap: () => onCatch(words[1]),
-          ),
-          _PositionedObjectChip(
-            alignment: const Alignment(-0.92, 0.60),
-            word: words[2],
-            isCollected: collectedWords.contains(words[2].source),
-            onTap: () => onCatch(words[2]),
-          ),
-          _PositionedObjectChip(
-            alignment: const Alignment(0.92, 0.48),
-            word: words[3],
-            isCollected: collectedWords.contains(words[3].source),
-            onTap: () => onCatch(words[3]),
-          ),
+          for (var i = 0; i < words.length && i < _chipAlignments.length; i++)
+            Align(
+              alignment: _chipAlignments[i],
+              child: CatchWordChip(
+                key: ValueKey('catch-${words[i].source}'),
+                word: words[i],
+                isCollected: collection.isCaught(words[i].id),
+                markerIcon: markerIconFor(words[i]),
+                onTap: () => onSpot(words[i]),
+              ),
+            ),
         ],
       ),
     );
@@ -233,7 +312,7 @@ class _SceneTableSurface extends StatelessWidget {
       child: CustomPaint(
         painter: _SceneTableSurfacePainter(
           color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
-          accent: CatchLingoColors.tealAccent.withValues(alpha: 0.10),
+          accent: CatchLingoColors.amberAccent.withValues(alpha: 0.10),
         ),
       ),
     );
@@ -321,55 +400,6 @@ class _SceneVignette extends StatelessWidget {
   }
 }
 
-class _ScanSurface extends StatelessWidget {
-  const _ScanSurface();
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.primary.withValues(alpha: 0.10);
-
-    return IgnorePointer(
-      child: CustomPaint(painter: _ScanSurfacePainter(color: color)),
-    );
-  }
-}
-
-class _ScanSurfacePainter extends CustomPainter {
-  const _ScanSurfacePainter({required this.color});
-
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..color = color
-      ..strokeWidth = 1;
-
-    for (var y = 82.0; y < size.height - 32; y += 54) {
-      canvas.drawLine(Offset(18, y), Offset(size.width - 18, y), linePaint);
-    }
-
-    final glowPaint = Paint()
-      ..shader = LinearGradient(
-        colors: [
-          Colors.transparent,
-          color.withValues(alpha: 0.58),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromLTWH(0, 0, size.width, 1));
-
-    canvas.drawRect(
-      Rect.fromLTWH(22, size.height * 0.55, size.width - 44, 2),
-      glowPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _ScanSurfacePainter oldDelegate) {
-    return oldDelegate.color != color;
-  }
-}
-
 class _LensFramePainter extends CustomPainter {
   const _LensFramePainter({required this.color});
 
@@ -428,57 +458,19 @@ class _LensFramePainter extends CustomPainter {
   }
 }
 
-class _PositionedObjectChip extends StatelessWidget {
-  const _PositionedObjectChip({
-    required this.alignment,
-    required this.word,
-    required this.isCollected,
-    required this.onTap,
-  });
-
-  final Alignment alignment;
-  final CatchWord word;
-  final bool isCollected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: alignment,
-      child: CatchWordChip(
-        key: ValueKey('catch-${word.source}'),
-        word: word,
-        isCollected: isCollected,
-        markerIcon: _markerIconFor(word),
-        onTap: onTap,
-      ),
-    );
-  }
-
-  IconData _markerIconFor(CatchWord word) {
-    return switch (word.source) {
-      'coffee' => Icons.local_cafe_rounded,
-      'cup' => Icons.local_drink_rounded,
-      'table' => Icons.table_restaurant_rounded,
-      'chair' => Icons.chair_rounded,
-      _ => Icons.center_focus_strong_rounded,
-    };
-  }
-}
-
 class _LatestDiscoveryPanel extends StatelessWidget {
   const _LatestDiscoveryPanel({
-    required this.word,
-    required this.duplicateMessage,
+    required this.spot,
+    required this.sceneComplete,
+    required this.onNextScene,
   });
 
-  final CatchWord? word;
-  final String? duplicateMessage;
+  final _LatestSpot? spot;
+  final bool sceneComplete;
+  final VoidCallback onNextScene;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
     return AnimatedSwitcher(
       duration: CatchLingoMotion.feedback,
       transitionBuilder: (child, animation) {
@@ -499,97 +491,157 @@ class _LatestDiscoveryPanel extends StatelessWidget {
           ),
         );
       },
-      child: word == null
-          ? Card(
-              key: const ValueKey('empty-discovery'),
-              child: Padding(
-                padding: const EdgeInsets.all(CatchLingoSpacing.lg),
-                child: Row(
+      child: _buildContent(context),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    final spot = this.spot;
+
+    if (spot == null) {
+      return const _HintCard(key: ValueKey('empty-discovery'));
+    }
+
+    if (spot.outcome.isNewCatch && sceneComplete) {
+      return _NewCatchCard(
+        key: ValueKey('caught-${spot.word.id}-complete'),
+        word: spot.word,
+        footer: _SceneCompleteFooter(onNextScene: onNextScene),
+      );
+    }
+
+    if (spot.outcome.isNewCatch) {
+      return _NewCatchCard(
+        key: ValueKey('caught-${spot.word.id}'),
+        word: spot.word,
+      );
+    }
+
+    return _SeenAgainCard(
+      key: ValueKey('seen-${spot.word.id}-${spot.outcome.seenCount}'),
+      word: spot.word,
+      seenCount: spot.outcome.seenCount,
+    );
+  }
+}
+
+class _HintCard extends StatelessWidget {
+  const _HintCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(CatchLingoSpacing.lg),
+        child: Row(
+          children: [
+            Icon(
+              Icons.touch_app_rounded,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(width: CatchLingoSpacing.md),
+            Expanded(
+              child: Text(
+                'Tap a marker to catch your first word here.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: CatchLingoColors.textMuted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NewCatchCard extends StatelessWidget {
+  const _NewCatchCard({super.key, required this.word, this.footer});
+
+  final CatchWord word;
+  final Widget? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(CatchLingoSpacing.lg),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFEAF3E2), Color(0xFFE0EDD6)],
+        ),
+        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
+        border: Border.all(color: CatchLingoColors.successBorder),
+        boxShadow: [
+          BoxShadow(
+            color: CatchLingoColors.successIcon.withValues(alpha: 0.10),
+            blurRadius: 18,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.auto_awesome_rounded,
+                color: CatchLingoColors.successIcon,
+              ),
+              const SizedBox(width: CatchLingoSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.touch_app_rounded, color: colorScheme.primary),
-                    const SizedBox(width: CatchLingoSpacing.md),
-                    Expanded(
-                      child: Text(
-                        'Tap a marker.',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(color: Colors.black54),
+                    Text(
+                      'Caught!',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: CatchLingoColors.successText,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: CatchLingoSpacing.xs),
+                    Text(
+                      word.translation,
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(
+                            color: CatchLingoColors.successText,
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    Text(
+                      word.source,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: CatchLingoColors.successIcon,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
                 ),
               ),
-            )
-          : Container(
-              key: ValueKey('${word!.source}-$duplicateMessage'),
-              padding: const EdgeInsets.all(CatchLingoSpacing.lg),
-              decoration: BoxDecoration(
-                gradient: duplicateMessage == null
-                    ? const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Color(0xFFE8F8F0), Color(0xFFDDF5EC)],
-                      )
-                    : null,
-                color: duplicateMessage == null
-                    ? null
-                    : colorScheme.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(CatchLingoRadius.card),
-                border: Border.all(
-                  color: duplicateMessage == null
-                      ? CatchLingoColors.successBorder
-                      : colorScheme.outlineVariant,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: CatchLingoColors.successIcon.withValues(alpha: 0.10),
-                    blurRadius: 18,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    duplicateMessage == null
-                        ? Icons.check_circle_rounded
-                        : Icons.info_rounded,
-                    color: duplicateMessage == null
-                        ? CatchLingoColors.successIcon
-                        : colorScheme.primary,
-                  ),
-                  const SizedBox(width: CatchLingoSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          duplicateMessage ?? word!.source,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(
-                                color: duplicateMessage == null
-                                    ? CatchLingoColors.successText
-                                    : colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
-                              ),
-                        ),
-                        if (duplicateMessage == null) ...[
-                          const SizedBox(height: CatchLingoSpacing.xs),
-                          Text(
-                            word!.translation,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  color: CatchLingoColors.successText,
-                                  fontWeight: FontWeight.w900,
-                                ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            ],
+          ),
+          if (footer != null) ...[
+            const SizedBox(height: CatchLingoSpacing.md),
+            footer!,
+          ],
+        ],
+      ),
     );
   }
 }
+
+class _SceneCompleteFooter extends StatelessWidget {
+  const _SceneCompleteFooter({required this.onNextScene});
+
+  final VoidCallback onNextScene;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+         
