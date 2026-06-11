@@ -14,6 +14,18 @@ Recovered and committed:
 - `6496ce3 harden caught word storage fallback`
 - `231768f refresh home after secondary flows`
 
+Current polish commits on top of the recovery:
+
+- `19c9749 polish camera loading and session progress`
+- `695fc24 refine dictionary word details`
+- `e3b0d4f add fading review hint on home`
+- `6f272e8 add clothing and workspace discoveries`
+- `0cc1d99 test dictionary word review flow`
+- `916568b polish catch feedback glow`
+- `5b11cdc handle camera preview lifecycle`
+- `132a496 improve session summary counts`
+- `76bc591 show summary when ending explore session`
+
 Do not roll back past `4451fa4` unless the user explicitly asks.
 
 ## Current Real App State
@@ -141,10 +153,12 @@ Work in small commits.
 
 Good next steps:
 
-- Polish permission denied / retry copy and layout
-- Improve camera loading state
-- Keep catch animation performant and warm
-- Add tests around storage migration and navigation refresh
+- Test the latest APK on a real Android device, especially camera pause/resume,
+  ending Explore early, and Dictionary -> Review.
+- Keep catch animation performant and warm.
+- Add tests around Explore summary behavior if the widget harness can cover it
+  without depending on camera hardware.
+- Continue small UI passes on Home/Dictionary density and text fit.
 - Build a fresh APK after meaningful camera work:
 
 ```powershell
@@ -162,5 +176,5 @@ Get-Item build\app\outputs\flutter-apk\app-debug.apk
 As of this handoff:
 
 - `flutter analyze` passes
-- `flutter test` passes
-
+- `flutter test` passes with 10 tests
+- `flutter build apk --debug` passes

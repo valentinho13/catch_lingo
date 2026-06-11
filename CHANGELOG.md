@@ -2,6 +2,38 @@
 
 All notable changes to CatchLingo.
 
+## Unreleased - 2026-06-12
+
+### Recovery and safety
+
+- Restored the real camera-based discovery app state from the recovered Git tree.
+- Hardened caught-word storage so `catch_lingo_caught_words` mirrors and can recover from `caughtIDs`, `seenCount`, and `lastSeenAt`.
+- Added handoff guardrails so future sessions do not replace the camera app with an older mock-only state.
+
+### Explore
+
+- Added a warm camera-loading state and friendlier camera fallback/retry panel.
+- Added visible session progress for new catches and known words spotted again.
+- Made session ending show the summary when there is session activity, including Android back and the Explore back button.
+- Added new-vs-seen-again counts to the session summary.
+- Replaced the louder repeating catch sparkle layer with a short, subtle glow pulse and reduced continuous motion.
+- Added camera preview lifecycle handling for Android pause/resume.
+
+### Dictionary and Review
+
+- Added a word-detail bottom sheet with category, sighting count, last-seen info, and a direct "Review this word" action.
+- Review can now start from a specific dictionary word.
+- Review gently prioritizes older last-seen words and marks them as fading without adding a spaced-repetition system.
+- Home now shows a small review recommendation based on last-seen data.
+
+### Discovery data
+
+- Added Clothing and Workspace word groups with stable new IDs and matching icons.
+
+### Tests
+
+- Added a widget test for Dictionary word detail into Review.
+- Current checks: `flutter analyze`, `flutter test`, and debug APK build pass.
 ## Unreleased — 2026-06-11
 
 ### Visual direction
