@@ -782,6 +782,11 @@ void _showWordDetail(BuildContext context, CatchWord word) {
                   value: category,
                 ),
                 _WordDetailFactRow(
+                  icon: Icons.auto_awesome_rounded,
+                  label: 'First caught',
+                  value: _firstCaughtLabel(word.caughtAt),
+                ),
+                _WordDetailFactRow(
                   icon: Icons.visibility_rounded,
                   label: 'Sightings',
                   value: _seenCountLabel(word.seenCount),
@@ -876,6 +881,24 @@ class _WordDetailFactRow extends StatelessWidget {
 String _seenCountLabel(int seenCount) {
   final count = seenCount <= 0 ? 1 : seenCount;
   return '$count ${count == 1 ? 'time' : 'times'}';
+}
+
+String _firstCaughtLabel(DateTime? caughtAt) {
+  if (caughtAt == null) {
+    return 'On an earlier adventure';
+  }
+
+  final days = DateTime.now().difference(caughtAt).inDays;
+
+  if (days == 0) {
+    return 'Today';
+  }
+
+  if (days == 1) {
+    return 'Yesterday';
+  }
+
+  return '$days days ago';
 }
 
 String _lastSeenLabel(DateTime? lastSeenAt) {

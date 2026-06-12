@@ -25,6 +25,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
   final Set<String> _reviewedWordIds = {};
   var _currentIndex = 0;
   var _isAnswerVisible = false;
+  var _isHardMode = false;
 
   @override
   void initState() {
@@ -89,6 +90,18 @@ class _ReviewScreenState extends State<ReviewScreen> {
       if (_reviewedWordIds.length < words.length) {
         _currentIndex = _nextUnreviewedIndex(words);
       }
+      _isAnswerVisible = false;
+    });
+  }
+
+  void _showAgainLater(List<CatchWord> words) {
+    if (words.isEmpty) {
+      return;
+    }
+
+    // The word stays unreviewed, so it comes back around in this session.
+    setState(() {
+      _currentIndex = _nextUnreviewedIndex(words);
       _isAnswerVisible = false;
     });
   }
@@ -179,6 +192,15 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+                const SizedBox(height: CatchLingoSpacing.md),
+                _ReviewModeToggle(
+                  isHardMode: _isHardMode,
+                  onChanged: (isHard) {
+                    setState(() {
+                      _isHardMode = isHard;
+                    });
+                  },
+                ),
                 const SizedBox(height: CatchLingoSpacing.lg),
                 _ReviewProgress(
                   current: isComplete
@@ -200,8 +222,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     total: words.length,
                     isAnswerVisible: _isAnswerVisible,
                     isFading: _isFadingWord(currentWord),
+                    showPictureHint: !_isHardMode,
                     onShowAnswer: _showAnswer,
-                    onAgain: () => _markReviewedAndMoveNext(words),
+                    onAgain: () => _showAgainLater(words),
                     onKnewIt: () => _markReviewedAndMoveNext(words),
                   ),
               ],
@@ -256,6 +279,93 @@ bool _isFadingWord(CatchWord word) {
   }
 
   return DateTime.now().difference(lastSeenAt).inDays >= 7;
+}
+
+class _ReviewModeToggle extends StatelessWidget {
+  const _ReviewModeToggle({required this.isHardMode, required this.onChanged});
+
+  final bool isHardMode;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _ReviewModeChip(
+              label: 'Easy Mode',
+              isSelected: !isHardMode,
+              onTap: () => onChanged(false),
+            ),
+            const SizedBox(width: CatchLingoSpacing.sm),
+            _ReviewModeChip(
+              label: 'Hard Mode',
+              isSelected: isHardMode,
+              onTap: () => onChanged(true),
+            ),
+          ],
+        ),
+        const SizedBox(height: CatchLingoSpacing.xs),
+        Text(
+          isHardMode
+              ? 'Just the word — from memory.'
+              : 'A little picture helps you.',
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+            color: CatchLingoColors.textMuted,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReviewModeChip extends StatelessWidget {
+  const _ReviewModeChip({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+        child: AnimatedContainer(
+          duration: CatchLingoMotion.chip,
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? CatchLingoColors.warmGreen
+                : CatchLingoColors.warmSurface,
+            borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+            border: Border.all(
+              color: isSelected
+                  ? CatchLingoColors.warmGreen
+                  : CatchLingoColors.textPrimary.withValues(alpha: 0.08),
+            ),
+          ),
+          child: Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: isSelected ? Colors.white : CatchLingoColors.textMuted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _ReviewProgress extends StatelessWidget {
@@ -359,6 +469,7 @@ class _ReviewCard extends StatelessWidget {
     required this.total,
     required this.isAnswerVisible,
     required this.isFading,
+    required this.showPictureHint,
     required this.onShowAnswer,
     required this.onAgain,
     required this.onKnewIt,
@@ -369,6 +480,7 @@ class _ReviewCard extends StatelessWidget {
   final int total;
   final bool isAnswerVisible;
   final bool isFading;
+  final bool showPictureHint;
   final VoidCallback onShowAnswer;
   final VoidCallback onAgain;
   final VoidCallback onKnewIt;
@@ -397,7 +509,7 @@ class _ReviewCard extends StatelessWidget {
         );
       },
       child: Container(
-        key: ValueKey('${word.id}-$isAnswerVisible'),
+        key: ValueKey('${word.id}-$isAnswerVisible-$showPictureHint'),
         constraints: const BoxConstraints(minHeight: 360),
         padding: const EdgeInsets.all(CatchLingoSpacing.xl),
         decoration: BoxDecoration(
@@ -440,8 +552,10 @@ class _ReviewCard extends StatelessWidget {
                 height: 1.05,
               ),
             ),
-            const SizedBox(height: CatchLingoSpacing.md),
-            _ReviewObjectIcon(word: word),
+            if (showPictureHint) ...[
+              const SizedBox(height: CatchLingoSpacing.md),
+              _ReviewObjectIcon(word: word),
+            ],
             const SizedBox(height: CatchLingoSpacing.xl),
             AnimatedSwitcher(
               duration: CatchLingoMotion.state,

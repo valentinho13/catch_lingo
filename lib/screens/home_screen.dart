@@ -264,6 +264,18 @@ class _HomeScreenState extends State<HomeScreen>
   }
 }
 
+String _greetingForHour(int hour) {
+  if (hour >= 5 && hour < 12) {
+    return 'Good morning';
+  }
+
+  if (hour >= 12 && hour < 18) {
+    return 'Good afternoon';
+  }
+
+  return 'Good evening';
+}
+
 class _MorningHeader extends StatelessWidget {
   const _MorningHeader({required this.onSettings});
 
@@ -291,7 +303,7 @@ class _MorningHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Good morning',
+                _greetingForHour(DateTime.now().hour),
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: CatchLingoColors.textMuted,
                   fontWeight: FontWeight.w600,
@@ -370,7 +382,7 @@ class _TodayCatchCard extends StatelessWidget {
               ),
               const SizedBox(height: CatchLingoSpacing.sm),
               Text(
-                'Explore the world. Point. Discover. Learn.',
+                'Wander around — the camera gathers the words you see.',
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -696,7 +708,10 @@ class _HomeCategories extends StatelessWidget {
       counts[category] = (counts[category] ?? 0) + 1;
     }
 
-    final entries = counts.entries.take(3).toList();
+    final entries =
+        (counts.entries.toList()..sort((a, b) => b.value.compareTo(a.value)))
+            .take(3)
+            .toList();
     final visibleEntries = entries.isEmpty
         ? [
             const MapEntry('Cafe', 0),

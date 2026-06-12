@@ -1,7 +1,5 @@
 import '../models/catch_word.dart';
 
-const mockSceneName = 'Live scene';
-
 const mockCatchWords = [
   CatchWord(
     id: 'kopi',

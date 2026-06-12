@@ -2,16 +2,23 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:camera/camera.dart';
 
 import '../app/app_theme.dart';
 import '../data/caught_word_storage.dart';
 import '../data/detection_service.dart';
-import '../data/mock_catch_words.dart';
 import '../models/catch_word.dart';
+import '../services/catch_haptics.dart';
 import '../widgets/word_visuals.dart';
 import 'review_screen.dart';
+
+/// Where collected words get drawn to: the session counter in the camera view.
+const _counterAlignment = Alignment(0, -0.38);
+
+/// How long a noticed word floats before it has been pulled into the counter.
+/// Unhurried on purpose: the word appears, bobs for a moment, then gets
+/// drawn in slowly enough to watch and enjoy.
+const _noticeFlightDuration = Duration(milliseconds: 6500);
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -121,14 +128,21 @@ class _ExploreScreenState extends State<ExploreScreen>
 
     final nextWord = _detectionService.nextDetection();
 
+    if (nextWord == null) {
+      return;
+    }
+
     setState(() {
       _activeDetection = nextWord;
       _isScanning = false;
     });
-  }
 
-  void _scanNext() {
-    _scheduleNextDetection(delay: const Duration(milliseconds: 450));
+    // The camera notices the word, then gathers it in on its own.
+    _detectionTimer = Timer(_noticeFlightDuration, () {
+      if (mounted) {
+        _collectWord(nextWord);
+      }
+    });
   }
 
   Future<void> _startCamera() async {
@@ -218,7 +232,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   Future<void> _collectWord(CatchWord detectedWord) async {
     final word = detectedWord;
     _detectionTimer?.cancel();
-    HapticFeedback.mediumImpact();
+    unawaited(CatchHaptics.land());
 
     if (_collectedWords.contains(word.id)) {
       final reinforcedWord = await _storage.reinforceWord(word);
@@ -281,7 +295,7 @@ class _ExploreScreenState extends State<ExploreScreen>
     }
 
     _detectionTimer?.cancel();
-    HapticFeedback.lightImpact();
+    unawaited(CatchHaptics.soft());
 
     setState(() {
       _sessionComplete = true;
@@ -337,10 +351,6 @@ class _ExploreScreenState extends State<ExploreScreen>
           children: [
             Positioned.fill(
               child: _FullscreenDiscoveryLayer(
-                words: mockCatchWords,
-                collectedWords: _collectedWords,
-                activeDetection: _activeDetection,
-                isScanning: _isScanning,
                 cameraController: _cameraController,
                 cameraMessage: _cameraMessage,
                 isCameraStarting: _isCameraStarting,
@@ -348,73 +358,51 @@ class _ExploreScreenState extends State<ExploreScreen>
               ),
             ),
             SafeArea(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final isLandscape =
-                      constraints.maxWidth > constraints.maxHeight;
-                  final panelWidth = isLandscape
-                      ? (constraints.maxWidth * 0.36).clamp(300.0, 430.0)
-                      : (constraints.maxWidth * 0.90).clamp(300.0, 460.0);
-
-                  return Padding(
-                    padding: const EdgeInsets.all(CatchLingoSpacing.lg),
-                    child: Stack(
-                      children: [
-                        Align(
-                          alignment: Alignment.topCenter,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _ExploreTopBar(
-                                count: _collectedWords.length,
-                                onExit: _finishOrExit,
-                              ),
-                              const SizedBox(height: CatchLingoSpacing.sm),
-                              _SessionProgressStrip(
-                                caught: _sessionCaught.length,
-                                knownSeen: _sessionKnownSeen,
-                                goal: _sessionGoal,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Positioned(
-                          left: isLandscape
-                              ? null
-                              : (constraints.maxWidth - panelWidth) / 2,
-                          right: isLandscape ? 0 : null,
-                          bottom: 0,
-                          width: panelWidth,
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxHeight: constraints.maxHeight - 92,
-                            ),
-                            child: SingleChildScrollView(
-                              reverse: true,
-                              physics: const ClampingScrollPhysics(),
-                              child: _DetectionBottomPanel(
-                                activeDetection: _activeDetection,
-                                justCaught: _justCaught,
-                                justCaughtIsDuplicate: _justCaughtIsDuplicate,
-                                isScanning: _isScanning,
-                                onCatch: _collectWord,
-                                onScanNext: _scanNext,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+              child: Padding(
+                padding: const EdgeInsets.all(CatchLingoSpacing.lg),
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: _ExploreTopBar(
+                    count: _collectedWords.length,
+                    onExit: _finishOrExit,
+                  ),
+                ),
               ),
             ),
+            if (!_sessionComplete)
+              SafeArea(
+                child: Align(
+                  alignment: _counterAlignment,
+                  child: _SessionVacuumCounter(
+                    count: _sessionCaught.length,
+                    goal: _sessionGoal,
+                  ),
+                ),
+              ),
+            if (_activeDetection case final noticedWord?)
+              SafeArea(
+                child: _NoticedWordChip(
+                  key: ValueKey('noticed-${noticedWord.id}'),
+                  word: noticedWord,
+                ),
+              ),
             if (_justCaught != null && !_sessionComplete)
               Positioned.fill(
-                child: _CatchCelebrationOverlay(
+                child: _CaughtWordReveal(
                   word: _justCaught!,
                   isDuplicate: _justCaughtIsDuplicate,
-                  totalCaught: _collectedWords.length,
+                ),
+              ),
+            if (_isScanning && _justCaught == null && !_sessionComplete)
+              SafeArea(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: CatchLingoSpacing.xl,
+                    ),
+                    child: const _ScanningHint(),
+                  ),
                 ),
               ),
             if (_sessionComplete)
@@ -572,89 +560,14 @@ class _TinyCollectionPillState extends State<_TinyCollectionPill>
   }
 }
 
-class _SessionProgressStrip extends StatelessWidget {
-  const _SessionProgressStrip({
-    required this.caught,
-    required this.knownSeen,
-    required this.goal,
-  });
-
-  final int caught;
-  final int knownSeen;
-  final int goal;
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = goal == 0 ? 0.0 : (caught / goal).clamp(0.0, 1.0);
-
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 320),
-      padding: const EdgeInsets.symmetric(
-        horizontal: CatchLingoSpacing.md,
-        vertical: CatchLingoSpacing.sm,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.38)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 5,
-                backgroundColor: CatchLingoColors.textPrimary.withValues(
-                  alpha: 0.08,
-                ),
-                valueColor: const AlwaysStoppedAnimation(
-                  CatchLingoColors.warmGreen,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: CatchLingoSpacing.sm),
-          Text(
-            '$caught/$goal new',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: CatchLingoColors.warmGreen,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          if (knownSeen > 0) ...[
-            const SizedBox(width: CatchLingoSpacing.sm),
-            Text(
-              '$knownSeen seen again',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: CatchLingoColors.textMuted,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
 class _FullscreenDiscoveryLayer extends StatelessWidget {
   const _FullscreenDiscoveryLayer({
-    required this.words,
-    required this.collectedWords,
-    required this.activeDetection,
-    required this.isScanning,
     required this.cameraController,
     required this.cameraMessage,
     required this.isCameraStarting,
     required this.onRetryCamera,
   });
 
-  final List<CatchWord> words;
-  final Set<String> collectedWords;
-  final CatchWord? activeDetection;
-  final bool isScanning;
   final CameraController? cameraController;
   final String? cameraMessage;
   final bool isCameraStarting;
@@ -712,14 +625,6 @@ class _FullscreenDiscoveryLayer extends StatelessWidget {
               message: cameraMessage!,
               onRetry: onRetryCamera,
             ),
-          ),
-        for (final word in words.where(
-          (word) => activeDetection?.id == word.id,
-        ))
-          _DetectionMarker(
-            word: word,
-            isActive: activeDetection?.id == word.id,
-            isKnown: collectedWords.contains(word.id),
           ),
       ],
     );
@@ -1016,533 +921,53 @@ class _SceneTableSurfacePainter extends CustomPainter {
   }
 }
 
-class _DetectionMarker extends StatelessWidget {
-  const _DetectionMarker({
-    required this.word,
-    required this.isActive,
-    required this.isKnown,
-  });
+class _SessionVacuumCounter extends StatefulWidget {
+  const _SessionVacuumCounter({required this.count, required this.goal});
 
-  final CatchWord word;
-  final bool isActive;
-  final bool isKnown;
+  final int count;
+  final int goal;
 
   @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment(word.markerX, word.markerY),
-      child: AnimatedContainer(
-        duration: CatchLingoMotion.state,
-        width: isActive ? 104 : 54,
-        height: isActive ? 54 : 48,
-        padding: const EdgeInsets.all(CatchLingoSpacing.sm),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: isActive ? 0.95 : 0.78),
-          borderRadius: BorderRadius.circular(isActive ? 18 : 16),
-          boxShadow: [
-            if (isActive)
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              catchWordIcon(word),
-              size: 20,
-              color: CatchLingoColors.warmGreen,
-            ),
-            if (isActive) ...[
-              const SizedBox(width: CatchLingoSpacing.sm),
-              Flexible(
-                child: Text(
-                  word.source,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: CatchLingoColors.textPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ] else if (isKnown) ...[
-              const SizedBox(width: CatchLingoSpacing.xs),
-              Icon(
-                Icons.check_circle_rounded,
-                size: 14,
-                color: CatchLingoColors.warmGreen,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+  State<_SessionVacuumCounter> createState() => _SessionVacuumCounterState();
 }
 
-class _DetectionBottomPanel extends StatelessWidget {
-  const _DetectionBottomPanel({
-    required this.activeDetection,
-    required this.justCaught,
-    required this.justCaughtIsDuplicate,
-    required this.isScanning,
-    required this.onCatch,
-    required this.onScanNext,
-  });
-
-  final CatchWord? activeDetection;
-  final CatchWord? justCaught;
-  final bool justCaughtIsDuplicate;
-  final bool isScanning;
-  final ValueChanged<CatchWord> onCatch;
-  final VoidCallback onScanNext;
-
-  @override
-  Widget build(BuildContext context) {
-    final word = activeDetection;
-    final caught = justCaught;
-
-    final Widget child;
-    final String key;
-
-    if (caught != null) {
-      key = 'reveal-${caught.id}-$justCaughtIsDuplicate';
-      child = const SizedBox.shrink();
-    } else if (word == null) {
-      key = 'scan-$isScanning';
-      child = _ScanningStatus(isEmpty: !isScanning);
-    } else {
-      key = 'detect-${word.id}';
-      child = _DetectedWordCard(
-        word: word,
-        onCatch: onCatch,
-        onScanNext: onScanNext,
-      );
-    }
-
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 320),
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
-      transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: ScaleTransition(
-            scale: Tween<double>(begin: 0.96, end: 1).animate(animation),
-            child: child,
-          ),
-        );
-      },
-      child: ClipRRect(
-        key: ValueKey(key),
-        borderRadius: BorderRadius.circular(CatchLingoRadius.card),
-        child: child,
-      ),
-    );
-  }
-}
-
-class _DetectedWordCard extends StatelessWidget {
-  const _DetectedWordCard({
-    required this.word,
-    required this.onCatch,
-    required this.onScanNext,
-  });
-
-  final CatchWord word;
-  final ValueChanged<CatchWord> onCatch;
-  final VoidCallback onScanNext;
-
-  @override
-  Widget build(BuildContext context) {
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Something here',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: CatchLingoColors.warmGreen,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            _DetectionCategoryPill(label: word.category),
-          ],
-        ),
-        const SizedBox(height: CatchLingoSpacing.xs),
-        Text(
-          word.source,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            color: CatchLingoColors.textPrimary,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          'Catch it to discover the word',
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: CatchLingoColors.textMuted,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: CatchLingoSpacing.sm),
-        Row(
-          children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () => onCatch(word),
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(44),
-                  backgroundColor: CatchLingoColors.warmGreen,
-                  foregroundColor: Colors.white,
-                ),
-                icon: const Icon(Icons.catching_pokemon_rounded),
-                label: const Text('Catch'),
-              ),
-            ),
-            const SizedBox(width: CatchLingoSpacing.sm),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: onScanNext,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Look around'),
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(44),
-                  foregroundColor: CatchLingoColors.textPrimary,
-                  side: BorderSide(
-                    color: CatchLingoColors.textPrimary.withValues(alpha: 0.22),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-
-    return Container(
-      padding: const EdgeInsets.all(CatchLingoSpacing.md),
-      decoration: BoxDecoration(
-        color: CatchLingoColors.warmSurface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.14),
-            blurRadius: 18,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: content,
-    );
-  }
-}
-
-class _DetectionCategoryPill extends StatelessWidget {
-  const _DetectionCategoryPill({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: CatchLingoColors.warmGreen.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: CatchLingoColors.warmGreen,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _ScanningStatus extends StatelessWidget {
-  const _ScanningStatus({required this.isEmpty});
-
-  final bool isEmpty;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerRight,
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: CatchLingoSpacing.lg,
-          vertical: CatchLingoSpacing.md,
-        ),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.90),
-          borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.10),
-              blurRadius: 14,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.auto_awesome_rounded, color: CatchLingoColors.amber),
-            const SizedBox(width: CatchLingoSpacing.md),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    isEmpty ? 'Keep an eye out…' : 'Looking around',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: CatchLingoColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    isEmpty
-                        ? 'Something to discover nearby'
-                        : 'There might be something here',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: CatchLingoColors.textMuted,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CatchCelebrationOverlay extends StatelessWidget {
-  const _CatchCelebrationOverlay({
-    required this.word,
-    required this.isDuplicate,
-    required this.totalCaught,
-  });
-
-  final CatchWord word;
-  final bool isDuplicate;
-  final int totalCaught;
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: TweenAnimationBuilder<double>(
-        tween: Tween<double>(begin: 0, end: 1),
-        duration: const Duration(milliseconds: 620),
-        curve: Curves.easeOutCubic,
-        builder: (context, t, child) {
-          final clamped = t.clamp(0.0, 1.0);
-
-          return Opacity(
-            opacity: clamped,
-            child: Transform.translate(
-              offset: Offset(0, 18 * (1 - clamped)),
-              child: Transform.scale(
-                scale: 0.88 + 0.12 * Curves.easeOutBack.transform(clamped),
-                child: child,
-              ),
-            ),
-          );
-        },
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.16),
-              ),
-            ),
-            const _CatchGlowPulse(),
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 330),
-                child: Padding(
-                  padding: const EdgeInsets.all(CatchLingoSpacing.xl),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _GentleMotion(
-                        scaleAmount: 0.018,
-                        yAmount: 1.5,
-                        duration: const Duration(milliseconds: 1150),
-                        child: Container(
-                          width: 76,
-                          height: 76,
-                          decoration: BoxDecoration(
-                            color: CatchLingoColors.successSurface,
-                            borderRadius: BorderRadius.circular(999),
-                            boxShadow: [
-                              BoxShadow(
-                                color: CatchLingoColors.warmGreen.withValues(
-                                  alpha: 0.28,
-                                ),
-                                blurRadius: 30,
-                                offset: const Offset(0, 12),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            isDuplicate
-                                ? Icons.visibility_rounded
-                                : Icons.check_rounded,
-                            color: CatchLingoColors.warmGreen,
-                            size: 38,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: CatchLingoSpacing.md),
-                      Text(
-                        isDuplicate ? 'Spotted again' : 'Found it',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
-                      const SizedBox(height: CatchLingoSpacing.md),
-                      _GentleMotion(
-                        scaleAmount: 0.006,
-                        yAmount: 2,
-                        duration: const Duration(milliseconds: 1500),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: CatchLingoSpacing.xl,
-                            vertical: CatchLingoSpacing.xxl,
-                          ),
-                          decoration: BoxDecoration(
-                            color: CatchLingoColors.warmSurface,
-                            borderRadius: BorderRadius.circular(
-                              CatchLingoRadius.panel,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.24),
-                                blurRadius: 34,
-                                offset: const Offset(0, 18),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                word.translation,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.displayMedium
-                                    ?.copyWith(
-                                      color: CatchLingoColors.warmGreen,
-                                      fontWeight: FontWeight.w800,
-                                      height: 1,
-                                    ),
-                              ),
-                              const SizedBox(height: CatchLingoSpacing.sm),
-                              Text(
-                                word.source,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(
-                                      color: CatchLingoColors.textPrimary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                              ),
-                              const SizedBox(height: CatchLingoSpacing.lg),
-                              Container(
-                                width: 64,
-                                height: 64,
-                                decoration: BoxDecoration(
-                                  color: CatchLingoColors.amber.withValues(
-                                    alpha: 0.12,
-                                  ),
-                                  borderRadius: BorderRadius.circular(24),
-                                ),
-                                child: Icon(
-                                  catchWordIcon(word),
-                                  color: CatchLingoColors.textPrimary,
-                                  size: 32,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: CatchLingoSpacing.lg),
-                      if (!isDuplicate)
-                        _RewardToken(totalCaught: totalCaught)
-                      else
-                        _RevisitToken(seenCount: word.seenCount),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _GentleMotion extends StatefulWidget {
-  const _GentleMotion({
-    required this.child,
-    this.scaleAmount = 0.02,
-    this.yAmount = 4,
-    this.duration = const Duration(milliseconds: 1200),
-  });
-
-  final Widget child;
-  final double scaleAmount;
-  final double yAmount;
-  final Duration duration;
-
-  @override
-  State<_GentleMotion> createState() => _GentleMotionState();
-}
-
-class _GentleMotionState extends State<_GentleMotion>
+class _SessionVacuumCounterState extends State<_SessionVacuumCounter>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  late final Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: widget.duration)
-      ..repeat();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 520),
+    );
+    _scale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1,
+          end: 1.08,
+        ).chain(CurveTween(curve: Curves.easeOutQuart)),
+        weight: 34,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(
+          begin: 1.08,
+          end: 1,
+        ).chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 66,
+      ),
+    ]).animate(_controller);
+  }
+
+  @override
+  void didUpdateWidget(covariant _SessionVacuumCounter oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (widget.count > oldWidget.count) {
+      _controller.forward(from: 0);
+    }
   }
 
   @override
@@ -1553,234 +978,685 @@ class _GentleMotionState extends State<_GentleMotion>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      child: widget.child,
-      builder: (context, child) {
-        final phase = math.sin(_controller.value * math.pi * 2);
-        final scale = 1 + phase * widget.scaleAmount;
-        final y = phase * widget.yAmount;
+    final progress = widget.goal == 0
+        ? 0.0
+        : (widget.count / widget.goal).clamp(0.0, 1.0);
 
-        return Transform.translate(
-          offset: Offset(0, y),
-          child: Transform.scale(scale: scale, child: child),
-        );
-      },
-    );
-  }
-}
-
-class _RewardToken extends StatelessWidget {
-  const _RewardToken({required this.totalCaught});
-
-  final int totalCaught;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _GentleMotion(
-          scaleAmount: 0.055,
-          yAmount: 2,
-          duration: const Duration(milliseconds: 820),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFC75F),
-              borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
-              boxShadow: [
-                BoxShadow(
-                  color: CatchLingoColors.amber.withValues(alpha: 0.28),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+    return ScaleTransition(
+      scale: _scale,
+      child: CustomPaint(
+        painter: _SessionRingPainter(progress: progress),
+        child: Container(
+          width: 74,
+          height: 74,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: CatchLingoColors.warmSurface.withValues(alpha: 0.86),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.58),
+              width: 1.2,
             ),
-            child: Text(
-              '+1',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: CatchLingoColors.textPrimary,
-                fontWeight: FontWeight.w800,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.12),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
               ),
-            ),
+            ],
           ),
-        ),
-        const SizedBox(height: CatchLingoSpacing.sm),
-        Text(
-          '$totalCaught caught total',
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${widget.count}',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: CatchLingoColors.textPrimary,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'collected',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: CatchLingoColors.textMuted,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 10,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RevisitToken extends StatelessWidget {
-  const _RevisitToken({required this.seenCount});
-
-  final int seenCount;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
-      ),
-      child: Text(
-        'Seen $seenCount times',
-        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-          color: CatchLingoColors.warmGreen,
-          fontWeight: FontWeight.w700,
         ),
       ),
     );
   }
 }
 
-class _CatchGlowPulse extends StatelessWidget {
-  const _CatchGlowPulse();
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 780),
-      curve: Curves.easeOutCubic,
-      builder: (context, progress, _) {
-        return CustomPaint(
-          painter: _CatchGlowPainter(progress: progress.clamp(0.0, 1.0)),
-          child: const SizedBox.expand(),
-        );
-      },
-    );
-  }
-}
-
-class _CatchGlowPainter extends CustomPainter {
-  const _CatchGlowPainter({required this.progress});
+class _SessionRingPainter extends CustomPainter {
+  const _SessionRingPainter({required this.progress});
 
   final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height * 0.42);
-    final longestSide = math.max(size.width, size.height);
-    final eased = Curves.easeOutCubic.transform(progress);
-    final fade = (1 - progress).clamp(0.0, 1.0);
-    final ringRadius = longestSide * (0.09 + eased * 0.18);
-    final haloRadius = longestSide * (0.18 + eased * 0.12);
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2 - 3;
 
-    final haloPaint = Paint()
-      ..shader = RadialGradient(
-        colors: [
-          CatchLingoColors.warmGreen.withValues(alpha: 0.18 * fade),
-          CatchLingoColors.amber.withValues(alpha: 0.08 * fade),
-          Colors.transparent,
-        ],
-        stops: const [0, 0.52, 1],
-      ).createShader(Rect.fromCircle(center: center, radius: haloRadius));
-
-    canvas.drawCircle(center, haloRadius, haloPaint);
-
-    final paint = Paint()
-      ..color = CatchLingoColors.amber.withValues(alpha: 0.30 * fade)
+    final trackPaint = Paint()
+      ..color = Colors.white.withValues(alpha: 0.34)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
+      ..strokeWidth = 3;
+
+    canvas.drawCircle(center, radius, trackPaint);
+
+    if (progress <= 0) {
+      return;
+    }
+
+    final progressPaint = Paint()
+      ..color = CatchLingoColors.warmGreen
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawCircle(center, ringRadius, paint);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      math.pi * 2 * progress,
+      false,
+      progressPaint,
+    );
   }
 
   @override
-  bool shouldRepaint(covariant _CatchGlowPainter oldDelegate) {
+  bool shouldRepaint(covariant _SessionRingPainter oldDelegate) {
     return oldDelegate.progress != progress;
   }
 }
 
-// ignore: unused_element
-class _CatchRevealCard extends StatelessWidget {
-  const _CatchRevealCard({required this.word, required this.isDuplicate});
+/// A noticed word floats up in the scene, then gets gently pulled into the
+/// session counter — the vacuum moment of automatic collection.
+class _NoticedWordChip extends StatefulWidget {
+  const _NoticedWordChip({super.key, required this.word});
+
+  final CatchWord word;
+
+  @override
+  State<_NoticedWordChip> createState() => _NoticedWordChipState();
+}
+
+class _NoticedWordChipState extends State<_NoticedWordChip>
+    with SingleTickerProviderStateMixin {
+  /// Point in the animation where the pull toward the counter takes over.
+  static const _pullStart = 0.50;
+
+  late final AnimationController _controller;
+  var _pullHapticSent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller =
+        AnimationController(vsync: this, duration: _noticeFlightDuration)
+          ..addListener(_sendPullHaptic)
+          ..forward();
+  }
+
+  void _sendPullHaptic() {
+    if (!_pullHapticSent && _controller.value >= _pullStart) {
+      _pullHapticSent = true;
+      unawaited(CatchHaptics.grip());
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final word = widget.word;
+    final startAlignment = Alignment(
+      word.markerX.clamp(-0.8, 0.8),
+      word.markerY.clamp(-0.2, 0.8),
+    );
+
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        final t = _controller.value;
+        final appear = const Interval(
+          0,
+          0.18,
+          curve: Curves.easeOutBack,
+        ).transform(t);
+        final settle = const Interval(
+          0.16,
+          _pullStart,
+          curve: Curves.easeInOutSine,
+        ).transform(t);
+        final charge = const Interval(
+          0.18,
+          _pullStart,
+          curve: Curves.easeInOutCubic,
+        ).transform(t);
+        final pull = const Interval(
+          _pullStart,
+          0.99,
+          curve: Curves.easeInOutSine,
+        ).transform(t);
+        final fade = const Interval(
+          0.96,
+          1,
+          curve: Curves.easeInCubic,
+        ).transform(t);
+
+        // A gentle bob while the word floats, settling as the pull takes over.
+        final bob =
+            math.sin((t + 0.05) * math.pi * 3.2) * 4.0 * appear * (1 - pull);
+        final rattle = charge * (1 - pull);
+        final shimmer = math.sin(t * math.pi * 26) * rattle;
+        final wiggleX =
+            (math.sin(t * math.pi * 82) * 5.2 +
+                math.sin(t * math.pi * 137) * 1.6) *
+            rattle;
+        final wiggleY = math.cos(t * math.pi * 96) * 2.2 * rattle;
+        final rotation = math.sin(t * math.pi * 88) * 0.022 * rattle;
+
+        // The pull drifts slightly sideways, like a current — not a slide.
+        final drift =
+            math.sin(pull * math.pi) * 0.10 * (startAlignment.x >= 0 ? 1 : -1);
+        final liftedStart = Alignment(
+          startAlignment.x,
+          startAlignment.y - 0.04 * settle,
+        );
+        final arcPeak = Alignment(
+          (startAlignment.x + _counterAlignment.x) / 2 + drift,
+          math.min(startAlignment.y, _counterAlignment.y) - 0.18,
+        );
+        final firstLeg = Alignment.lerp(liftedStart, arcPeak, pull)!;
+        final secondLeg = Alignment.lerp(arcPeak, _counterAlignment, pull)!;
+        final pulledAlignment = Alignment.lerp(firstLeg, secondLeg, pull)!;
+        final alignment = Alignment(
+          pulledAlignment.x.clamp(-1.0, 1.0),
+          pulledAlignment.y.clamp(-1.0, 1.0),
+        );
+
+        // A small anticipation pop as the suction grips, then shrink inward.
+        final double pullScale;
+        if (pull <= 0.12) {
+          pullScale = 1 + 0.08 * Curves.easeOutBack.transform(pull / 0.12);
+        } else if (pull <= 0.72) {
+          pullScale =
+              1.08 - 0.22 * Curves.easeInOut.transform((pull - 0.12) / 0.60);
+        } else {
+          pullScale =
+              0.86 - 0.48 * Curves.easeInCubic.transform((pull - 0.72) / 0.28);
+        }
+        final chargeScale = 1 + charge * (1 - pull) * 0.085 + shimmer * 0.018;
+        final scale = (0.76 + 0.24 * appear) * chargeScale * pullScale;
+        final opacity = (appear * (1 - fade)).clamp(0.0, 1.0);
+        final auraProgress = math.max(appear, charge);
+
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _PullParticlesPainter(
+                    start: startAlignment,
+                    current: alignment,
+                    target: _counterAlignment,
+                    pull: pull,
+                    tick: t,
+                  ),
+                ),
+              ),
+            ),
+            Align(
+              alignment: alignment,
+              child: RepaintBoundary(
+                child: Opacity(
+                  opacity: opacity,
+                  child: Transform.translate(
+                    offset: Offset(wiggleX, bob + wiggleY),
+                    child: Transform.rotate(
+                      angle: rotation,
+                      child: Transform.scale(
+                        scale: scale,
+                        child: SizedBox(
+                          width: 244,
+                          height: 150,
+                          child: CustomPaint(
+                            painter: _CatchAuraPainter(
+                              progress: auraProgress,
+                              charge: charge,
+                              pull: pull,
+                            ),
+                            child: Center(child: child),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: CatchLingoColors.warmSurface.withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.60),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.16),
+              blurRadius: 22,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              catchWordIcon(widget.word),
+              size: 18,
+              color: CatchLingoColors.warmGreen,
+            ),
+            const SizedBox(width: CatchLingoSpacing.sm),
+            Text(
+              widget.word.source,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: CatchLingoColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CatchAuraPainter extends CustomPainter {
+  const _CatchAuraPainter({
+    required this.progress,
+    required this.charge,
+    required this.pull,
+  });
+
+  final double progress;
+  final double charge;
+  final double pull;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final visible = (progress * (1 - pull * 0.55)).clamp(0.0, 1.0);
+    final charged = charge * (1 - pull);
+
+    if (visible <= 0) {
+      return;
+    }
+
+    final haloRadius = size.shortestSide * (0.34 + charged * 0.12);
+    final haloPaint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          CatchLingoColors.amber.withValues(alpha: 0.22 * visible),
+          CatchLingoColors.warmGreen.withValues(alpha: 0.12 * visible),
+          Colors.transparent,
+        ],
+        stops: const [0, 0.54, 1],
+      ).createShader(Rect.fromCircle(center: center, radius: haloRadius));
+
+    canvas.drawCircle(center, haloRadius, haloPaint);
+
+    final ringPaint = Paint()
+      ..color = CatchLingoColors.amber.withValues(alpha: 0.24 * charged)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..strokeCap = StrokeCap.round;
+
+    if (charged > 0) {
+      final ringRect = Rect.fromCenter(
+        center: center,
+        width: size.width * (0.72 + charged * 0.08),
+        height: size.height * (0.54 + charged * 0.12),
+      );
+      canvas.drawOval(ringRect, ringPaint);
+    }
+
+    final sparklePaint = Paint()
+      ..color = CatchLingoColors.amber.withValues(alpha: 0.72 * charged)
+      ..style = PaintingStyle.fill;
+    final greenSparklePaint = Paint()
+      ..color = CatchLingoColors.warmGreen.withValues(alpha: 0.38 * charged)
+      ..style = PaintingStyle.fill;
+
+    for (var i = 0; i < 7; i++) {
+      final phase = (charge + i * 0.19) % 1.0;
+      final angle = i * 1.73 + phase * math.pi * 0.7;
+      final radius = size.shortestSide * (0.27 + 0.20 * phase);
+      final offset = Offset(math.cos(angle) * radius, math.sin(angle) * radius);
+      final sparkleCenter = center + offset;
+      final sparkleSize = (1.8 + 2.4 * (1 - phase)) * charged;
+
+      canvas.drawCircle(
+        sparkleCenter,
+        sparkleSize,
+        i.isEven ? sparklePaint : greenSparklePaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _CatchAuraPainter oldDelegate) {
+    return oldDelegate.progress != progress ||
+        oldDelegate.charge != charge ||
+        oldDelegate.pull != pull;
+  }
+}
+
+class _PullParticlesPainter extends CustomPainter {
+  const _PullParticlesPainter({
+    required this.start,
+    required this.current,
+    required this.target,
+    required this.pull,
+    required this.tick,
+  });
+
+  final Alignment start;
+  final Alignment current;
+  final Alignment target;
+  final double pull;
+  final double tick;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (pull <= 0.02) {
+      return;
+    }
+
+    final startPoint = _pointForAlignment(size, current);
+    final targetPoint = _pointForAlignment(size, target);
+    final originPoint = _pointForAlignment(size, start);
+    final merge = Curves.easeInOutSine.transform(pull).clamp(0.0, 1.0);
+    final streamPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round
+      ..color = const Color(0xFF9FE8B5).withValues(alpha: 0.12 * pull);
+
+    final control = Offset(
+      (originPoint.dx + targetPoint.dx) / 2 +
+          math.sin(pull * math.pi) * size.width * 0.08,
+      math.min(originPoint.dy, targetPoint.dy) - size.height * 0.12,
+    );
+
+    final guidePath = Path()
+      ..moveTo(startPoint.dx, startPoint.dy)
+      ..quadraticBezierTo(
+        control.dx,
+        control.dy,
+        targetPoint.dx,
+        targetPoint.dy,
+      );
+
+    canvas.drawPath(guidePath, streamPaint);
+
+    for (var i = 0; i < 18; i++) {
+      final travel = ((tick * 1.85) + i * 0.075) % 1.0;
+      final easedTravel = Curves.easeInOutCubic.transform(travel);
+      final streamStart = (pull * 0.28).clamp(0.0, 0.28);
+      final localT = (streamStart + easedTravel * (1 - streamStart)).clamp(
+        0.0,
+        1.0,
+      );
+      final position = _quadraticPoint(
+        startPoint,
+        control,
+        targetPoint,
+        localT,
+      );
+      final wobbleAngle = i * 1.91 + tick * math.pi * 7;
+      final wobble = Offset(
+        math.cos(wobbleAngle) * (5.0 + i % 3) * (1 - localT),
+        math.sin(wobbleAngle) * (3.5 + i % 2) * (1 - localT),
+      );
+      final mergeFade = (1 - localT).clamp(0.0, 1.0);
+      final alpha = pull * math.sin(travel * math.pi).abs() * 0.72;
+      final bubbleRadius =
+          (2.2 + (i % 5) * 0.75) *
+          (0.55 + mergeFade * 0.75) *
+          (1 - pull * localT * 0.34);
+
+      if (alpha <= 0.02 || bubbleRadius <= 0.4) {
+        continue;
+      }
+
+      final bubbleCenter = position + wobble;
+      final bubblePaint = Paint()
+        ..shader =
+            RadialGradient(
+              colors: [
+                Colors.white.withValues(alpha: alpha * 0.58),
+                const Color(0xFFB8F5C9).withValues(alpha: alpha * 0.78),
+                const Color(0xFF6FCF91).withValues(alpha: alpha * 0.28),
+              ],
+              stops: const [0, 0.56, 1],
+            ).createShader(
+              Rect.fromCircle(center: bubbleCenter, radius: bubbleRadius * 1.6),
+            );
+
+      canvas.drawCircle(bubbleCenter, bubbleRadius, bubblePaint);
+
+      final rimPaint = Paint()
+        ..color = Colors.white.withValues(alpha: alpha * 0.50)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.7;
+      canvas.drawCircle(bubbleCenter, bubbleRadius, rimPaint);
+
+      final glintPaint = Paint()
+        ..color = Colors.white.withValues(alpha: alpha * 0.72)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(
+        bubbleCenter.translate(-bubbleRadius * 0.32, -bubbleRadius * 0.36),
+        math.max(0.55, bubbleRadius * 0.22),
+        glintPaint,
+      );
+    }
+
+    final absorbPaint = Paint()
+      ..color = const Color(0xFFB8F5C9).withValues(alpha: 0.16 * pull)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0 + 2.0 * merge;
+    canvas.drawCircle(targetPoint, 8 + 14 * merge, absorbPaint);
+  }
+
+  Offset _pointForAlignment(Size size, Alignment alignment) {
+    return Offset(
+      size.width * (alignment.x + 1) / 2,
+      size.height * (alignment.y + 1) / 2,
+    );
+  }
+
+  Offset _quadraticPoint(Offset a, Offset b, Offset c, double t) {
+    final oneMinusT = 1 - t;
+    return a * oneMinusT * oneMinusT + b * 2 * oneMinusT * t + c * t * t;
+  }
+
+  @override
+  bool shouldRepaint(covariant _PullParticlesPainter oldDelegate) {
+    return oldDelegate.start != start ||
+        oldDelegate.current != current ||
+        oldDelegate.target != target ||
+        oldDelegate.pull != pull ||
+        oldDelegate.tick != tick;
+  }
+}
+
+class _CaughtWordReveal extends StatelessWidget {
+  const _CaughtWordReveal({required this.word, required this.isDuplicate});
 
   final CatchWord word;
   final bool isDuplicate;
 
   @override
   Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween<double>(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 460),
-      curve: Curves.easeOutBack,
-      builder: (context, t, child) {
-        return Transform.scale(
-          scale: 0.82 + 0.18 * t.clamp(0.0, 1.0),
-          child: Opacity(opacity: t.clamp(0.0, 1.0), child: child),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.all(CatchLingoSpacing.lg),
-        decoration: BoxDecoration(
-          color: CatchLingoColors.warmSurface,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.14),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  isDuplicate
-                      ? Icons.visibility_rounded
-                      : Icons.auto_awesome_rounded,
-                  color: CatchLingoColors.amber,
-                  size: 20,
-                ),
-                const SizedBox(width: CatchLingoSpacing.sm),
-                Text(
-                  isDuplicate ? 'Spotted again' : 'Found it',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: CatchLingoColors.amber,
-                    fontWeight: FontWeight.w700,
+    return IgnorePointer(
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Align(
+            alignment: const Alignment(0, 0.10),
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0, end: 1),
+              duration: const Duration(milliseconds: 460),
+              curve: Curves.easeOutCubic,
+              builder: (context, t, child) {
+                final clamped = t.clamp(0.0, 1.0);
+
+                return Opacity(
+                  opacity: clamped,
+                  child: Transform.translate(
+                    offset: Offset(0, 14 * (1 - clamped)),
+                    child: Transform.scale(
+                      scale: 0.9 + 0.1 * Curves.easeOutBack.transform(clamped),
+                      child: child,
+                    ),
                   ),
+                );
+              },
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 280),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: CatchLingoSpacing.xl,
+                  vertical: CatchLingoSpacing.lg,
                 ),
-              ],
-            ),
-            const SizedBox(height: CatchLingoSpacing.sm),
-            Text(
-              word.translation,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: CatchLingoColors.textPrimary,
-                fontWeight: FontWeight.w700,
+                decoration: BoxDecoration(
+                  color: CatchLingoColors.warmSurface,
+                  borderRadius: BorderRadius.circular(CatchLingoRadius.panel),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 28,
+                      offset: const Offset(0, 14),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isDuplicate
+                              ? Icons.visibility_rounded
+                              : Icons.auto_awesome_rounded,
+                          color: CatchLingoColors.amber,
+                          size: 18,
+                        ),
+                        const SizedBox(width: CatchLingoSpacing.xs),
+                        Text(
+                          isDuplicate ? 'Spotted again' : 'Found it',
+                          style: Theme.of(context).textTheme.labelLarge
+                              ?.copyWith(
+                                color: CatchLingoColors.amber,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: CatchLingoSpacing.sm),
+                    Text(
+                      word.translation,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        color: CatchLingoColors.warmGreen,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                      ),
+                    ),
+                    const SizedBox(height: CatchLingoSpacing.xs),
+                    Text(
+                      word.source,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: CatchLingoColors.textPrimary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (isDuplicate) ...[
+                      const SizedBox(height: CatchLingoSpacing.sm),
+                      Text(
+                        'Seen ${word.seenCount} times',
+                        style: Theme.of(context).textTheme.labelMedium
+                            ?.copyWith(
+                              color: CatchLingoColors.textMuted,
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              isDuplicate
-                  ? '${word.source} · spotted ${word.seenCount} times'
-                  : word.source,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: CatchLingoColors.textMuted,
-                fontWeight: FontWeight.w500,
-              ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScanningHint extends StatelessWidget {
+  const _ScanningHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: CatchLingoSpacing.lg,
+        vertical: CatchLingoSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(CatchLingoRadius.chip),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.auto_awesome_rounded,
+            size: 16,
+            color: CatchLingoColors.amber,
+          ),
+          const SizedBox(width: CatchLingoSpacing.sm),
+          Text(
+            'Looking around…',
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: CatchLingoColors.textMuted,
+              fontWeight: FontWeight.w700,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

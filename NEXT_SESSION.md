@@ -173,10 +173,38 @@ Then verify the timestamp:
 Get-Item build\app\outputs\flutter-apk\app-debug.apk
 ```
 
+## Uncommitted Sprint Work (2026-06-12 evening)
+
+The working tree contains uncommitted work (commit only when the user asks):
+
+Sprint 1 (polish):
+
+- Review "Again" now re-queues the word in the round instead of finishing it
+- Dictionary word detail shows "First caught" context
+- Home greeting follows the time of day; categories sorted by size
+- Dead `_CatchRevealCard` and `mockSceneName` removed; marker rendering simplified
+
+Sprint 2 (design-direction update — automatic collection):
+
+- Explore collects words automatically; noticed words are pulled into a new
+  central session counter with progress ring (vacuum feel). Tap-to-catch UI
+  (bottom panel, Catch button, scene-anchored markers) removed per the new
+  design direction. Camera preview, storage, and duplicate prevention intact.
+- Review has Easy Mode (picture hint) / Hard Mode (just the word).
+- Home hero copy reflects automatic collection.
+- Design references: `assets/design/catchlingo_ui_vision_v1.png` (current
+  template) and `assets/design/app_icon.jpg` (icon reference; the green camera
+  corners are part of the identity — do not crop or remove them).
+- Hold-to-collect was deliberately not implemented (not final yet).
+- After on-device feedback (frames in `screenshots/screenrecordings/`): the
+  suction was too fast to see. It is now 3.2s with bob, anticipation pop,
+  sideways drift, and gentle haptics (selection tick at pull start, light
+  impact on landing).
+
 ## Current Checks
 
 As of this handoff:
 
 - `flutter analyze` passes
-- `flutter test` passes with 11 tests
-- `flutter build apk --debug` passes
+- `flutter test` passes with 13 tests
+- `flutter build apk --debug` passes (last verified before the evening sprints)
